@@ -6,7 +6,7 @@
 #    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/03/09 12:05:19 by kipouliq          #+#    #+#              #
-#    Updated: 2026/03/09 14:52:30 by kipouliq         ###   ########.fr        #
+#    Updated: 2026/03/10 17:18:19 by kipouliq         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -37,6 +37,7 @@ $(OBJS_DIR)%.o: %.c
 
 $(NAME) : $(OBJS)
 	$(CC) $(FLAGS) -o $(NAME) $(OBJS) -g3
+	sudo setcap cap_net_raw=ep ./$(NAME)
 
 # bonus : $(NAME_BONUS)
 

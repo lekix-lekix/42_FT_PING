@@ -6,13 +6,13 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/10 14:56:11 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/10 17:18:05 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // 1. Parse arguments  -> done
 // 2. Resolve hostname (if necessary)  -> done
-// -. Setup RAW Socket
+// -. Setup RAW Socket -> done ?
 // === PING LOOP ===
 // 3. Construct ip + IMCP header
 // 4. Wrap it in ip header (automatic ?)
@@ -29,8 +29,6 @@ void	setup_socket(int *sock, struct addrinfo *res_list)
 	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
 	{
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-		if (*sock == -1)
-			continue ;
 		if (*sock)
 			break ;
 	}
@@ -62,6 +60,34 @@ void	resolve_host(char *host, struct addrinfo **res)
 	}
 }
 
+void	calculate_checksum(struct icmphdr *icmp_header)
+{
+	// DO THE CALCUL
+}
+
+void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
+{
+	(*seq) += 1;
+
+	icmp_header->type = ICMP_ECHO;
+	icmp_header->code = 0;
+	icmp_header->checksum = 0; // to calculate
+	icmp_header->un.echo.id = htons(getpid());
+	icmp_header->un.echo.sequence = *seq;
+	
+	calculate_checksum(icmp_header);
+}
+
+void	ping_loop(int *socket)
+{
+	struct icmphdr 	icmp_header;
+
+	while (1)
+	{
+		fill_icmphdr(&icmp_header);
+	}
+}
+
 int	main(int argc, char **argv)
 {
 	struct addrinfo *res;
@@ -79,5 +105,6 @@ int	main(int argc, char **argv)
 	parse_args(argv + 1, &host);
 	resolve_host(host, &res);
 	setup_socket(&socket, res);
+	ping_loop(&socket);
 	freeaddrinfo(res);
 }
