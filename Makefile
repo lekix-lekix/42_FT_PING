@@ -6,7 +6,7 @@
 #    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/03/09 12:05:19 by kipouliq          #+#    #+#              #
-#    Updated: 2026/03/10 17:18:19 by kipouliq         ###   ########.fr        #
+#    Updated: 2026/03/10 17:19:19 by kipouliq         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -49,6 +49,7 @@ clean :
 
 fclean : clean
 	rm -f $(NAME)
+	rm -rf ./.vagrant
 	
 re : fclean
 	make all
