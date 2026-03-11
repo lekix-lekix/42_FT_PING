@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/10 17:18:05 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/11 16:41:10 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,8 +61,22 @@ void	resolve_host(char *host, struct addrinfo **res)
 }
 
 void	calculate_checksum(struct icmphdr *icmp_header)
-{
-	// DO THE CALCUL
+{	
+	int 		res = 0;
+	uint16_t 	*ptr;
+
+	ptr = (uint16_t *)icmp_header;
+	for (int i = 0; i < 5; i++)
+		printf("ptr %d = %08X\n", i, ptr[i]);
+	for (int i = 0; i < 4; i += 2)
+	{
+		// printf("ptr = %08X, ptr + 1 = %08X\n", ptr[i], ptr[i + 1]);
+		res += (ptr[i] << 8 | ptr[i + 1]);
+		printf("res = %08X\n", res);
+	}
+	if (res > 0xFFFF)
+		res += res >> 16;
+	printf("res = %08X\n", res);
 }
 
 void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
@@ -73,7 +87,7 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 	icmp_header->code = 0;
 	icmp_header->checksum = 0; // to calculate
 	icmp_header->un.echo.id = htons(getpid());
-	icmp_header->un.echo.sequence = *seq;
+	icmp_header->un.echo.sequence = htons(*seq);
 	
 	calculate_checksum(icmp_header);
 }
@@ -81,10 +95,13 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 void	ping_loop(int *socket)
 {
 	struct icmphdr 	icmp_header;
+	int 			seq = 0;
 
+	(void) socket;
 	while (1)
 	{
-		fill_icmphdr(&icmp_header);
+		fill_icmphdr(&icmp_header, &seq);
+		break ;
 	}
 }
 

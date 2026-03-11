@@ -23,7 +23,9 @@ Vagrant.configure("2") do |config|
         # Accepte github.com sans prompt
         ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 
+        rm -rf ft_ping
         git clone git@github.com:lekix-lekix/42_FT_PING.git ft_ping
+        sudo chown vagrant:vagrant -R ./ft_ping && sudo chown vagrant:vagrant ./ft_ping
     SHELL
   end
 end
