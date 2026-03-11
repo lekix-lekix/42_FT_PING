@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/11 16:41:10 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/11 17:16:33 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,19 +63,22 @@ void	resolve_host(char *host, struct addrinfo **res)
 void	calculate_checksum(struct icmphdr *icmp_header)
 {	
 	int 		res = 0;
-	uint16_t 	*ptr;
+	uint8_t 	*ptr;
 
-	ptr = (uint16_t *)icmp_header;
+	ptr = (uint8_t *)icmp_header;
 	for (int i = 0; i < 5; i++)
 		printf("ptr %d = %08X\n", i, ptr[i]);
-	for (int i = 0; i < 4; i += 2)
+	for (int i = 0; i < 10; i += 2)
 	{
-		// printf("ptr = %08X, ptr + 1 = %08X\n", ptr[i], ptr[i + 1]);
+		printf("ptr = %04X, ptr + 1 = %04X, combined = %04X\n", ptr[i], ptr[i + 1], ptr[i] << 8 | ptr[ i + 1]);
 		res += (ptr[i] << 8 | ptr[i + 1]);
-		printf("res = %08X\n", res);
+		printf("res = %04X\n", res);
+		if (res > 0xFFFF)
+		{
+			res += res >> 16;
+			
+		}
 	}
-	if (res > 0xFFFF)
-		res += res >> 16;
 	printf("res = %08X\n", res);
 }
 
