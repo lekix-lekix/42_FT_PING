@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/11 17:16:33 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/12 17:08:51 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,23 +63,20 @@ void	resolve_host(char *host, struct addrinfo **res)
 void	calculate_checksum(struct icmphdr *icmp_header)
 {	
 	int 		res = 0;
-	uint8_t 	*ptr;
+	uint16_t 	*ptr;
 
-	ptr = (uint8_t *)icmp_header;
-	for (int i = 0; i < 5; i++)
-		printf("ptr %d = %08X\n", i, ptr[i]);
-	for (int i = 0; i < 10; i += 2)
+	ptr = (uint16_t *)icmp_header;
+	for (int i = 0; i < 4; i++)
 	{
-		printf("ptr = %04X, ptr + 1 = %04X, combined = %04X\n", ptr[i], ptr[i + 1], ptr[i] << 8 | ptr[ i + 1]);
-		res += (ptr[i] << 8 | ptr[i + 1]);
-		printf("res = %04X\n", res);
+		res += ptr[i];
 		if (res > 0xFFFF)
 		{
 			res += res >> 16;
-			
+			res = 0xFFFF & res;
 		}
 	}
-	printf("res = %08X\n", res);
+	icmp_header->checksum = ~res;
+	printf("checksum = %X\n", icmp_header->checksum);
 }
 
 void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
@@ -95,17 +92,36 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 	calculate_checksum(icmp_header);
 }
 
-void	ping_loop(int *socket)
+void	receive_msg(int *socket)
 {
+	struct sockaddr_in 	sender;
+	socklen_t			sender_len = sizeof(sender);
+	char 				buff[64] = {0};
+	int					bytes_read;
+
+	bytes_read = recvfrom(*socket, buff, sizeof(buff), 0, (struct sockaddr *)&sender, &sender_len);
+	if (bytes_read == -1)
+		perror("recvfrom");
+	printf("bytes read = %d\n", bytes_read);
+}
+
+void	ping_loop(int *socket, struct addrinfo *dest)
+{
+	t_icmpping		ping;
 	struct icmphdr 	icmp_header;
 	int 			seq = 0;
 
 	(void) socket;
-	while (1)
+	fill_icmphdr(&icmp_header, &seq);
+	ping.header = icmp_header;
+	memset(ping.payload, 0, 56);
+	int err = sendto(*socket, (const void *)&ping, sizeof(ping), 0, (struct sockaddr *)dest->ai_addr, dest->ai_addrlen);
+	if (err == -1)
 	{
-		fill_icmphdr(&icmp_header, &seq);
-		break ;
+		perror("sendto");
 	}
+	printf("bytes sent : %d\n", err);
+	receive_msg(socket);
 }
 
 int	main(int argc, char **argv)
@@ -125,6 +141,6 @@ int	main(int argc, char **argv)
 	parse_args(argv + 1, &host);
 	resolve_host(host, &res);
 	setup_socket(&socket, res);
-	ping_loop(&socket);
+	ping_loop(&socket, res);
 	freeaddrinfo(res);
 }
