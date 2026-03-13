@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 11:54:48 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/10 17:18:14 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/13 17:14:00 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,10 +31,15 @@
 typedef struct s_icmpping
 {
     struct icmphdr      header;
-    uint32_t            id;
-    uint32_t            timestamp;
+    char                payload[56];
 } t_icmpping;
 
+typedef struct s_ctx
+{
+    int                 socket;
+    char                *hostname;
+    struct addrinfo     *dest;
+} t_ctx;
 
 void parse_args(char **args, char **host);
 
