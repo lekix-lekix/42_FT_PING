@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/13 17:13:49 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/16 11:44:26 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,9 @@
 // 6. Print it
 // ===  END LOOP ===
 // 7. Handle signals for ctrl c (and sigalarm ?)
+
+
+// secure ping by dest addr ? check with two instances running
 
 #include "../ft_ping.h"
 
@@ -129,7 +132,7 @@ void	ping_loop(t_ctx *context)
 	t_icmpping		ping;
 	int 			seq = 0;
 
-	// printf("PING %s (%s): 56 data bytes\n", context->hostname, getnameinfo(context->dest));
+	printf("PING %s (%d): 56 data bytes\n", context->hostname, *((int*)context->dest->ai_addr));
 	while (1)
 	{
 		fill_icmphdr(&icmp_header, &seq);
