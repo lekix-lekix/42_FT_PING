@@ -15,7 +15,8 @@ NAME = ft_ping
 # NAME_BONUS = ft_ping_bonus
 
 SRC = ./srcs/ft_ping.c \
-	./srcs/parsing.c
+	./srcs/parsing.c \
+	./srcs/linked_list.c
 		
 OBJ = $(SRC:.c=.o)
 

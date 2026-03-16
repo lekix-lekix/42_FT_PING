@@ -23,10 +23,18 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
+
+typedef struct s_lst
+{
+	void			*content;
+	struct s_lst	*next;
+} t_lst;
 
 typedef struct s_icmpping
 {
@@ -39,8 +47,16 @@ typedef struct s_ctx
     int                 socket;
     char                *hostname;
     struct addrinfo     *dest;
+    t_lst               *times;
 } t_ctx;
 
-void parse_args(char **args, char **host);
+void    parse_args(char **args, char **host);
+
+
+// LIST FUNCTIONS
+t_lst	*ft_lstnew(void *content);
+void	ft_lstadd_back(t_lst **lst, t_lst *new);
+void	ft_lstclear(t_lst **lst, void (*del)(void *));
+float   calculate_avg(t_lst **lst);
 
 #endif
