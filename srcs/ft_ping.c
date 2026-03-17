@@ -23,7 +23,7 @@
 // 6. Print it -> done
 // ===  END LOOP ===
 // -. STATS :
-// - store individual times
+// - store individual times -> done
 // - calculate : min/avg/max/stddev
 // 7. Handle signals for ctrl c (and sigalarm ?)
 
@@ -89,7 +89,7 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 {
 	icmp_header->type = ICMP_ECHO;
 	icmp_header->code = 0;
-	icmp_header->checksum = 0; // to calculate
+	icmp_header->checksum = 0;
 	icmp_header->un.echo.id = htons(getpid());
 	icmp_header->un.echo.sequence = htons(*seq);
 }
@@ -113,13 +113,15 @@ int		receive_packet(t_ctx *context, uint8_t *ttl)
 	dest = (struct sockaddr_in *)context->dest->ai_addr;
 	bytes_read = recvfrom(context->socket, buff, sizeof(buff), 0, 
 		(struct sockaddr *)&sender, &sender_len);
-	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr)
-		return (-1);
 	if (bytes_read == -1)
 	{
 		perror("recvfrom");
 		exit_error(context);
 	}
+	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr)
+		return (-1);
+	if (!context->source_dest_ip[0])
+		get_readable_ip_str((struct sockaddr *)&sender, context->source_dest_ip);
 	*ttl = ((struct iphdr *)buff)->ttl;
 	return (bytes_read);
 }
@@ -203,14 +205,15 @@ void	ping_loop(t_ctx *context)
 		time_elapsed = get_time_elapsed(&start);
 		store_time(context, time_elapsed);
 
-		printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f\n", // refactor and add : real source ip addr from sender
+		printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.3f\n",
 			bytes_read - sizeof(struct iphdr), 
+			context->source_dest_ip,
 			ipaddr_str,
 			seq, 
 			ttl, 
 			get_time_elapsed(&start));
 		
-		printf("avg = %.3f\n", calculate_avg(&context->times));
+		// printf("avg = %.3f\n", calculate_avg(&cont ext->times));
 
 		sleep(1);
 		seq++;
@@ -230,6 +233,7 @@ int	main(int argc, char **argv)
 	
 	context.hostname = NULL;
 	context.times = NULL;
+	memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
 	parse_args(argv + 1, &context.hostname);
 	resolve_host(context.hostname, &context.dest);
 	setup_socket(&context.socket, context.dest);

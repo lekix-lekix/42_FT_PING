@@ -47,11 +47,13 @@ typedef struct s_ctx
     int                 socket;
     char                *hostname;
     struct addrinfo     *dest;
+    char                source_dest_ip[INET_ADDRSTRLEN];
     t_lst               *times;
+    struct timeval      start;
 } t_ctx;
 
 void    parse_args(char **args, char **host);
-
+void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
 
 // LIST FUNCTIONS
 t_lst	*ft_lstnew(void *content);
