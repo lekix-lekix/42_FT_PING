@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <signal.h>
+#include <errno.h>
 
 typedef struct s_lst
 {
@@ -50,10 +52,13 @@ typedef struct s_ctx
     char                source_dest_ip[INET_ADDRSTRLEN];
     t_lst               *times;
     struct timeval      start;
+    int                 ping_successes;
+    int                 seq;
 } t_ctx;
 
 void    parse_args(char **args, char **host);
 void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
+t_ctx	*get_context(void);
 
 // LIST FUNCTIONS
 t_lst	*ft_lstnew(void *content);

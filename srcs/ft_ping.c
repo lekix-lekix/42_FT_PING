@@ -31,19 +31,37 @@
 
 #include "../ft_ping.h"
 
+void	exit_error(void)
+{
+	t_ctx *context = get_context();
+
+	freeaddrinfo(context->dest);
+	close(context->socket);
+	ft_lstclear(&context->times, free);
+	exit(EXIT_FAILURE);
+}
+
 void	setup_socket(int *sock, struct addrinfo *res_list)
 {
+	struct timeval	timeout = {1, 0};
+	int				opt_error = 0;			
+
 	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
 	{
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (*sock)
+		{
+			opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 			break ;
+		}
 	}
-	if (*sock == -1)
+	if (*sock == -1 || opt_error == -1)
 	{
-		perror("socket");
-		freeaddrinfo(res_list);
-		exit(-1);
+		if (*sock == -1)
+			perror("socket");
+		else if (opt_error == -1)
+			perror("setsockopt");
+		exit_error();
 	}
 }
 
@@ -54,16 +72,15 @@ void	resolve_host(char *host, struct addrinfo **dest)
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET; // ipv4
-	hints.ai_socktype = SOCK_RAW;
+	hints.ai_socktype = SOCK_RAW; // raw socket
 	err = getaddrinfo(host, NULL, &hints, &(*dest));
 	if (err != 0) // handle other cases
 	{
 		if (err == -2)
-		{
 			dprintf(STDERR, "ping: unknown host\n");
-			freeaddrinfo(*dest);
-			exit(1);
-		}
+		else
+			perror("getaddrinfo");
+		exit_error();
 	}
 }
 
@@ -94,14 +111,6 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 	icmp_header->un.echo.sequence = htons(*seq);
 }
 
-void	exit_error(t_ctx *context)
-{
-	freeaddrinfo(context->dest);
-	close(context->socket);
-	ft_lstclear(&context->times, free);
-	exit(EXIT_FAILURE);
-}
-
 int		receive_packet(t_ctx *context, uint8_t *ttl)
 {
 	struct sockaddr_in 	sender;
@@ -115,14 +124,20 @@ int		receive_packet(t_ctx *context, uint8_t *ttl)
 		(struct sockaddr *)&sender, &sender_len);
 	if (bytes_read == -1)
 	{
-		perror("recvfrom");
-		exit_error(context);
+		if (errno == EAGAIN)
+			return (-1);
+		else
+		{
+			perror("recvfrom");
+			exit_error();
+		}
 	}
 	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr)
 		return (-1);
 	if (!context->source_dest_ip[0])
 		get_readable_ip_str((struct sockaddr *)&sender, context->source_dest_ip);
 	*ttl = ((struct iphdr *)buff)->ttl;
+	context->ping_successes += 1;
 	return (bytes_read);
 }
 
@@ -133,7 +148,7 @@ void	send_packet(t_ctx *context, t_icmpping *ping)
 	if (err == -1)
 	{
 		perror("sendto");
-		exit_error(context);
+		exit_error();
 	}
 }
 
@@ -172,12 +187,43 @@ void	store_time(t_ctx *context, float time)
 
 	new_time = malloc(sizeof(float));
 	if (!new_time)
-		exit_error(context);
+		exit_error();
 	*new_time = time;
 	node = ft_lstnew(new_time);
 	if (!node)
-		exit_error(context);
+		exit_error();
 	ft_lstadd_back(&context->times, node);
+}
+
+t_ctx	*get_context(void)
+{
+	static bool	 	init = false;
+	static t_ctx 	context;
+
+	if (!init)
+	{
+		context.hostname = NULL;
+		context.times = NULL;
+		context.seq = 1;
+		memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
+		init = true;
+		return (&context);
+	}
+	return (&context);
+}
+
+void	sigint_handler(int code)
+{
+	t_ctx			*context = get_context();
+	int				packet_loss = 100 - (context->ping_successes / context->seq * 100);
+	float			total_time_elapsed;
+
+	(void) code;
+	total_time_elapsed = get_time_elapsed(&context->start);
+	printf("\n--- %s ping statistics ---\n", context->hostname);
+	printf("%d packets transmitted, %d received, %d%% packet loss, time %.0fms\n",
+		context->seq, context->ping_successes, packet_loss, total_time_elapsed);
+	exit(0);
 }
 
 void	ping_loop(t_ctx *context)
@@ -185,44 +231,52 @@ void	ping_loop(t_ctx *context)
 	t_icmpping		ping_packet;
 	char			ipaddr_str[INET_ADDRSTRLEN];
 	struct timeval  start;
-	int 			seq = 1;
 	int				bytes_read;
 	float			time_elapsed;
 	uint8_t			ttl;
 
 	get_readable_ip_str(context->dest->ai_addr, ipaddr_str);
-
+	gettimeofday(&context->start, NULL);
+	
 	printf("PING %s (%s): %ld(%ld) bytes of data.\n", 
 		context->hostname, ipaddr_str, sizeof(ping_packet.payload),
 		sizeof(ping_packet) + sizeof(struct iphdr));
 
 	while (1)
 	{
-		prep_ping_packet(&ping_packet, &seq);
+		prep_ping_packet(&ping_packet, &context->seq);
 		gettimeofday(&start, NULL);
 		send_packet(context, &ping_packet);
 		bytes_read = receive_packet(context, &ttl);
-		time_elapsed = get_time_elapsed(&start);
-		store_time(context, time_elapsed);
-
-		printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.3f\n",
-			bytes_read - sizeof(struct iphdr), 
-			context->source_dest_ip,
-			ipaddr_str,
-			seq, 
-			ttl, 
-			get_time_elapsed(&start));
-		
-		// printf("avg = %.3f\n", calculate_avg(&cont ext->times));
-
-		sleep(1);
-		seq++;
+		if (bytes_read > 0)
+		{
+			time_elapsed = get_time_elapsed(&start);
+			store_time(context, time_elapsed);
+			printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.3f\n",
+				bytes_read - sizeof(struct iphdr), 
+				context->source_dest_ip,
+				ipaddr_str,
+				context->seq, 
+				ttl, 
+				time_elapsed);
+				sleep(1);
+		}
+		context->seq++;
 	}
 }
 
-int	main(int argc, char **argv)
+void	setup_signal(void)
 {
-	t_ctx			context;
+	struct sigaction act;
+
+	bzero(&act, sizeof(act));
+	act.sa_handler = &sigint_handler;
+	sigaction(SIGINT, &act, NULL);
+}
+
+int		main(int argc, char **argv)
+{
+	t_ctx			*context;
 
 	if (argc < 2) // Will change if bonuses implemented
 	{
@@ -230,13 +284,11 @@ int	main(int argc, char **argv)
 			Try 'ping -?' for more information.\n");
 			exit(64);
 	}
-	
-	context.hostname = NULL;
-	context.times = NULL;
-	memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
-	parse_args(argv + 1, &context.hostname);
-	resolve_host(context.hostname, &context.dest);
-	setup_socket(&context.socket, context.dest);
-	ping_loop(&context);
+	context = get_context();
+	parse_args(argv + 1, &context->hostname);
+	resolve_host(context->hostname, &context->dest);
+	setup_socket(&context->socket, context->dest);
+	setup_signal();
+	ping_loop(context);
 }
 
