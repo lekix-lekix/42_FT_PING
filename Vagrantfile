@@ -5,6 +5,9 @@ Vagrant.configure("2") do |config|
   config.vm.define "ft_ping_vm" do |ft_ping_vm|
     ft_ping_vm.vm.provider "virtualbox"
     ft_ping_vm.vm.provision "shell", privileged: false, inline: <<-SHELL
+
+      sudo apt-get update && sudo apt-get install -y inetutils-ping valgrind --fix-missing
+      
       mkdir -p ~/.ssh
       chmod 700 ~/.ssh
 

@@ -30,6 +30,8 @@ CC = cc
 
 FLAGS = -Wall -Wextra -Werror
 
+LINK = $(CC) $(FLAGS) -o $(NAME) $(OBJS) -lm -g3
+
 all : $(NAME)
 
 $(OBJS_DIR)%.o: %.c
@@ -37,13 +39,17 @@ $(OBJS_DIR)%.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@
 
 $(NAME) : $(OBJS)
-	$(CC) $(FLAGS) -o $(NAME) $(OBJS) -g3
+	$(LINK)
 	sudo setcap cap_net_raw=ep ./$(NAME)
 
 # bonus : $(NAME_BONUS)
 
 # $(NAME_BONUS) : $(BONUS_OBJS)
 # 	$(CC) $(FLAGS) -g3 $(BONUS_OBJS) -o $(NAME_BONUS)
+
+valgrind : $(OBJS)
+	$(LINK)
+	sudo valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes ./ft_ping $(ARGS)
 
 clean :
 	rm -rf $(OBJS_DIR)

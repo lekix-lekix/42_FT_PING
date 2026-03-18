@@ -24,10 +24,16 @@
 // ===  END LOOP ===
 // -. STATS :
 // - store individual times -> done
-// - calculate : min/avg/max/stddev
-// 7. Handle signals for ctrl c (and sigalarm ?)
+// - calculate : min/avg/max/stddev -> done
+// 7. Handle signals for ctrl c (and sigalarm ?) -> done
+// ! - VERBOSE
 
-// secure ping by dest addr ? check with two instances running
+// BUGS
+// -. Seq start at 0 on inetutils ffs
+// -. Timestamps sometimes wrong
+// -. more than 1 ping is messed up
+
+// if sender != dest -> packet error
 
 #include "../ft_ping.h"
 
@@ -44,14 +50,16 @@ void	exit_error(void)
 void	setup_socket(int *sock, struct addrinfo *res_list)
 {
 	struct timeval	timeout = {1, 0};
-	int				opt_error = 0;			
+	int				opt_error = 0;
 
 	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
 	{
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (*sock)
 		{
+			int ttl = 1;
 			opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+			opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 			break ;
 		}
 	}
@@ -104,11 +112,12 @@ void	calculate_checksum(t_icmpping *ping)
 
 void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 {
-	icmp_header->type = ICMP_ECHO;
-	icmp_header->code = 0;
-	icmp_header->checksum = 0;
-	icmp_header->un.echo.id = htons(getpid());
-	icmp_header->un.echo.sequence = htons(*seq);
+	icmp_header->type 				= ICMP_ECHO;
+	icmp_header->code 				= 0;
+	icmp_header->checksum 			= 0;
+	icmp_header->un.echo.id 		= htons(getpid());
+	printf("header id = %d\n", icmp_header->un.echo.id);
+	icmp_header->un.echo.sequence 	= htons(*seq);
 }
 
 int		receive_packet(t_ctx *context, uint8_t *ttl)
@@ -132,8 +141,18 @@ int		receive_packet(t_ctx *context, uint8_t *ttl)
 			exit_error();
 		}
 	}
-	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr)
-		return (-1);
+	//////
+	struct iphdr *ip = (struct iphdr *)buff;
+	int ip_header_len = ip->ihl * 4;  // ihl est en mots de 4 octets
+	struct icmphdr *icmp = (struct icmphdr *)(buff + ip_header_len);
+
+	printf("%d\n", icmp->type);
+	/////
+	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr) // PACKET ERROR
+	{
+		printf("wrong sender detected\n");
+		return (receive_packet(context, ttl));
+	}
 	if (!context->source_dest_ip[0])
 		get_readable_ip_str((struct sockaddr *)&sender, context->source_dest_ip);
 	*ttl = ((struct iphdr *)buff)->ttl;
@@ -216,13 +235,24 @@ void	sigint_handler(int code)
 {
 	t_ctx			*context = get_context();
 	int				packet_loss = 100 - (context->ping_successes / context->seq * 100);
-	float			total_time_elapsed;
 
 	(void) code;
-	total_time_elapsed = get_time_elapsed(&context->start);
-	printf("\n--- %s ping statistics ---\n", context->hostname);
-	printf("%d packets transmitted, %d received, %d%% packet loss, time %.0fms\n",
-		context->seq, context->ping_successes, packet_loss, total_time_elapsed);
+	printf("--- %s ping statistics ---\n", context->hostname);
+	printf("%d packets transmitted, %d packets received, %d%% packet loss\n",
+		context->seq, context->ping_successes, packet_loss );
+	
+	if (context->times)
+	{
+		printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+			get_min(&context->times),
+			calculate_avg(&context->times),
+			get_max(&context->times),
+			get_standard_deviation(&context->times)
+		);
+		ft_lstclear(&context->times, free);
+	}
+	freeaddrinfo(context->dest);
+	close(context->socket);
 	exit(0);
 }
 
@@ -236,11 +266,9 @@ void	ping_loop(t_ctx *context)
 	uint8_t			ttl;
 
 	get_readable_ip_str(context->dest->ai_addr, ipaddr_str);
-	gettimeofday(&context->start, NULL);
 	
-	printf("PING %s (%s): %ld(%ld) bytes of data.\n", 
-		context->hostname, ipaddr_str, sizeof(ping_packet.payload),
-		sizeof(ping_packet) + sizeof(struct iphdr));
+	printf("PING %s (%s): %ld bytes of data.\n", 
+		context->hostname, ipaddr_str, sizeof(ping_packet.payload));
 
 	while (1)
 	{
@@ -252,10 +280,9 @@ void	ping_loop(t_ctx *context)
 		{
 			time_elapsed = get_time_elapsed(&start);
 			store_time(context, time_elapsed);
-			printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.3f\n",
+			printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
 				bytes_read - sizeof(struct iphdr), 
 				context->source_dest_ip,
-				ipaddr_str,
 				context->seq, 
 				ttl, 
 				time_elapsed);

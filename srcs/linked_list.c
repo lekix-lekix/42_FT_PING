@@ -45,9 +45,24 @@ void	ft_lstclear(t_lst **lst, void (*del)(void *))
 	}
 }
 
+int	ft_lstsize(t_lst *lst)
+{
+	int	size;
+
+	size = 0;
+	if (!lst)
+		return (0);
+	while (lst)
+	{
+		lst = lst->next;
+		size++;
+	}
+	return (size);
+}
+
 float   calculate_avg(t_lst **lst)
 {
-    float   avg = 0;
+    float   avg	  = 0;
     int     count = 0;
 
     for (t_lst *curr = *lst; curr; curr = curr->next)
@@ -56,4 +71,60 @@ float   calculate_avg(t_lst **lst)
         count++;
     }
     return (avg / count);
+}
+
+float	calculate_avg_ftab(float *tab, int size)
+{
+	float avg = 0;
+
+	for (int i = 0; i < size; i++)
+		avg += tab[i];
+	return (avg / size);
+}
+
+float	get_min(t_lst **lst)
+{
+	float 	min = *(float*)(*lst)->content;
+
+	for (t_lst *curr = *lst; curr; curr = curr->next)
+	{
+		if (*(float *)curr->content < min) 
+			min = *(float *)curr->content;
+	}
+	return min;
+}
+
+float	get_max(t_lst **lst)
+{
+	float 	max = *(float*)(*lst)->content;
+
+	for (t_lst *curr = *lst; curr; curr = curr->next)
+	{
+		if (*(float *)curr->content > max) 
+			max = *(float *)curr->content;
+	}
+	return max;
+}
+
+float	get_standard_deviation(t_lst **lst)
+{
+	float *deviations = NULL;
+	float variance = 0;
+	float avg = calculate_avg(lst);
+	int lst_size = ft_lstsize(*lst);
+	
+	deviations = malloc(sizeof(float) * (lst_size + 1));
+	if (!deviations)
+		exit_error();
+
+	t_lst *current = *lst;
+	for (int i = 0; i < lst_size; i++)
+	{
+		float curr = *(float*)current->content; 
+		deviations[i] = (curr - avg) * (curr - avg);
+		current = current->next;
+	}
+	variance = calculate_avg_ftab(deviations, lst_size);
+	free(deviations);
+	return (sqrt(variance));
 }

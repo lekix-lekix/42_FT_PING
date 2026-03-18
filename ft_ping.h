@@ -31,11 +31,12 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <errno.h>
+#include <math.h>
 
 typedef struct s_lst
 {
-	void			*content;
-	struct s_lst	*next;
+	void			    *content;
+	struct s_lst	    *next;
 } t_lst;
 
 typedef struct s_icmpping
@@ -51,7 +52,6 @@ typedef struct s_ctx
     struct addrinfo     *dest;
     char                source_dest_ip[INET_ADDRSTRLEN];
     t_lst               *times;
-    struct timeval      start;
     int                 ping_successes;
     int                 seq;
 } t_ctx;
@@ -59,11 +59,15 @@ typedef struct s_ctx
 void    parse_args(char **args, char **host);
 void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
 t_ctx	*get_context(void);
+void	exit_error(void);
 
 // LIST FUNCTIONS
 t_lst	*ft_lstnew(void *content);
 void	ft_lstadd_back(t_lst **lst, t_lst *new);
 void	ft_lstclear(t_lst **lst, void (*del)(void *));
 float   calculate_avg(t_lst **lst);
+float	get_min(t_lst **lst);
+float	get_max(t_lst **lst);
+float	get_standard_deviation(t_lst **lst);
 
 #endif
