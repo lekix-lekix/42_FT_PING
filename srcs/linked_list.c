@@ -47,7 +47,7 @@ void	ft_lstclear(t_lst **lst, void (*del)(void *))
 
 float   calculate_avg(t_lst **lst)
 {
-    float   avg;
+    float   avg = 0;
     int     count = 0;
 
     for (t_lst *curr = *lst; curr; curr = curr->next)
