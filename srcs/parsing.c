@@ -26,6 +26,7 @@ void print_help(void)
     printf("%s\n", "");
     printf("%s\n", " Valid options:");
     printf("%s\n", "");
+    printf("%s\n", "  -v        verbose output");
     printf("%s\n", "  -?        give this help list");
     printf("%s\n", "  -V        print program version");
     printf("%s\n", "");
@@ -47,6 +48,8 @@ void print_version(void)
 
 void parse_option(char *opt)
 {
+    t_ctx   *context = get_context();
+
     opt += 1;
 	for (int i = 0; opt[i]; i++)  // loop needed foor bonuses
 	{
@@ -56,8 +59,16 @@ void parse_option(char *opt)
 			print_help();
 		else if (opt[0] == 'V')
 			print_version();
+        else if (opt[0] == 'v')
+        {
+            context->options.verbose = true;
+            printf("verbose \n");
+        }
 		else
+        {
 			invalid_option(opt[0]);
+            return ;
+        }
 	}
 }
 

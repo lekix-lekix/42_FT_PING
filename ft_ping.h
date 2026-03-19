@@ -33,6 +33,10 @@
 #include <errno.h>
 #include <math.h>
 
+typedef struct sockaddr_in sockaddr_in;
+typedef struct addrinfo addrinfo;
+typedef struct iphdr iphdr;
+
 typedef struct s_lst
 {
 	void			    *content;
@@ -45,13 +49,30 @@ typedef struct s_icmpping
     char                payload[56];
 } t_icmpping;
 
+typedef struct s_opt
+{
+    bool                verbose;
+} t_opt;
+
+typedef struct t_pkt
+{
+    int                 bytes_read;
+    iphdr               ip_header;
+	char 				raw_content[1024];
+	socklen_t			sender_len;;
+	sockaddr_in 	    sender;
+
+} t_pkt;
+
 typedef struct s_ctx
 {
+    t_opt               options;
     int                 socket;
     char                *hostname;
-    struct addrinfo     *dest;
+    addrinfo            *dest;
     char                source_dest_ip[INET_ADDRSTRLEN];
     t_lst               *times;
+    t_pkt               curr_pkt;
     int                 ping_successes;
     int                 seq;
 } t_ctx;

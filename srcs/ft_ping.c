@@ -35,6 +35,11 @@
 
 // if sender != dest -> packet error
 
+// PLAN
+// -> fix parsing
+// -> do normal verbose output
+// -> fix packet error detection
+
 #include "../ft_ping.h"
 
 void	exit_error(void)
@@ -57,9 +62,9 @@ void	setup_socket(int *sock, struct addrinfo *res_list)
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (*sock)
 		{
-			int ttl = 1;
+			// int ttl = 1;
 			opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-			opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+			// opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 			break ;
 		}
 	}
@@ -120,17 +125,44 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
 	icmp_header->un.echo.sequence 	= htons(*seq);
 }
 
-int		receive_packet(t_ctx *context, uint8_t *ttl)
+int		check_packet(int *ttl)
 {
-	struct sockaddr_in 	sender;
-	struct sockaddr_in  *dest;
-	socklen_t			sender_len = sizeof(sender);
-	char 				buff[1024] = {0};
-	int					bytes_read;
+	t_ctx		*context = get_context();
+	t_pkt		*curr_pkt = &context->curr_pkt;
+	sockaddr_in *dest = (struct sockaddr_in *)context->dest->ai_addr;
 
+	if (!context->source_dest_ip[0])
+		get_readable_ip_str((struct sockaddr *)&curr_pkt->sender, context->source_dest_ip);
+
+	struct iphdr *ip = (struct iphdr *)curr_pkt->raw_content;
+	int ip_header_len = ip->ihl * 4;  // ihl est en mots de 4 octets
+	struct icmphdr *icmp = (struct icmphdr *)(curr_pkt->raw_content + ip_header_len);
+
+	printf("%d\n", icmp->type);
+	
+	if (curr_pkt->sender.sin_addr.s_addr != dest->sin_addr.s_addr) // PACKET ERROR
+	{
+		printf("wrong sender detected\n");
+		// return (receive_packet(context, ttl));
+	}
+	*ttl = ((struct iphdr *)context->curr_pkt.raw_content)->ttl;
+	context->ping_successes += 1;
+	return (0);
+}
+
+int		receive_packet(uint8_t *ttl)
+{
+	// struct sockaddr_in 	sender;
+	t_ctx			*context = get_context();
+	sockaddr_in  	*dest;
+	int				bytes_read;
+	// socklen_t			sender_len = sizeof(sender);
+	// char 				buff[1024] = {0};
+
+	memset(context->curr_pkt.raw_content, 0, 1024);
 	dest = (struct sockaddr_in *)context->dest->ai_addr;
-	bytes_read = recvfrom(context->socket, buff, sizeof(buff), 0, 
-		(struct sockaddr *)&sender, &sender_len);
+	bytes_read = recvfrom(context->socket, context->curr_pkt.raw_content, 1024, 0, 
+		(struct sockaddr *)&context->curr_pkt.sender, &context->curr_pkt.sender_len);
 	if (bytes_read == -1)
 	{
 		if (errno == EAGAIN)
@@ -141,22 +173,8 @@ int		receive_packet(t_ctx *context, uint8_t *ttl)
 			exit_error();
 		}
 	}
-	//////
-	struct iphdr *ip = (struct iphdr *)buff;
-	int ip_header_len = ip->ihl * 4;  // ihl est en mots de 4 octets
-	struct icmphdr *icmp = (struct icmphdr *)(buff + ip_header_len);
 
-	printf("%d\n", icmp->type);
-	/////
-	if (sender.sin_addr.s_addr != dest->sin_addr.s_addr) // PACKET ERROR
-	{
-		printf("wrong sender detected\n");
-		return (receive_packet(context, ttl));
-	}
-	if (!context->source_dest_ip[0])
-		get_readable_ip_str((struct sockaddr *)&sender, context->source_dest_ip);
-	*ttl = ((struct iphdr *)buff)->ttl;
-	context->ping_successes += 1;
+
 	return (bytes_read);
 }
 
@@ -256,6 +274,26 @@ void	sigint_handler(int code)
 	exit(0);
 }
 
+void	print_output(int bytes_read, uint8_t *ttl, float *time_elapsed)
+{
+	t_ctx	*context = get_context();
+
+	if (context->options.verbose)
+	{
+
+	}
+	else
+	{
+		printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
+			bytes_read - sizeof(struct iphdr), 
+			context->source_dest_ip,
+			context->seq, 
+			*ttl, 
+			*time_elapsed
+		);
+	}
+}
+
 void	ping_loop(t_ctx *context)
 {
 	t_icmpping		ping_packet;
@@ -275,18 +313,13 @@ void	ping_loop(t_ctx *context)
 		prep_ping_packet(&ping_packet, &context->seq);
 		gettimeofday(&start, NULL);
 		send_packet(context, &ping_packet);
-		bytes_read = receive_packet(context, &ttl);
+		bytes_read = receive_packet(&ttl);
 		if (bytes_read > 0)
 		{
 			time_elapsed = get_time_elapsed(&start);
 			store_time(context, time_elapsed);
-			printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
-				bytes_read - sizeof(struct iphdr), 
-				context->source_dest_ip,
-				context->seq, 
-				ttl, 
-				time_elapsed);
-				sleep(1);
+			print_output(bytes_read, &ttl, &time_elapsed);
+			sleep(1);
 		}
 		context->seq++;
 	}
