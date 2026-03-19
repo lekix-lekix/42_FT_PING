@@ -52,6 +52,39 @@ void	exit_error(void)
 	exit(EXIT_FAILURE);
 }
 
+char  *icmp_error_str(int type, int code)
+{
+    if (type == 3) // Destination Unreachable
+    {
+        switch (code)
+        {
+            case 0: return "Net Unreachable";
+            case 1: return "Host Unreachable";
+            case 2: return "Protocol Unreachable";
+            case 3: return "Port Unreachable";
+            case 4: return "Fragmentation Needed";
+            case 5: return "Source Route Failed";
+        }
+    }
+    else if (type == 11) // Time Exceeded
+    {
+        switch (code)
+        {
+            case 0: return "TTL exceeded in transit";
+            case 1: return "Fragment reassembly time exceeded";
+        }
+    }
+    else if (type == 12) // Parameter Problem
+    {
+        switch (code)
+        {
+            case 0: return "Pointer indicates the error";
+            case 1: return "Missing a required option";
+        }
+    }
+    return "Unknown";
+}
+
 void	setup_socket(int *sock, struct addrinfo *res_list)
 {
 	struct timeval	timeout = {1, 0};
@@ -60,7 +93,7 @@ void	setup_socket(int *sock, struct addrinfo *res_list)
 	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
 	{
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-		if (*sock)
+		if (*sock != -1)
 		{
 			// int ttl = 1;
 			opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -115,53 +148,32 @@ void	calculate_checksum(t_icmpping *ping)
 	ping->header.checksum = ~res;
 }
 
-void	fill_icmphdr(struct icmphdr *icmp_header, int *seq)
+void	fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
 {
 	icmp_header->type 				= ICMP_ECHO;
 	icmp_header->code 				= 0;
 	icmp_header->checksum 			= 0;
-	icmp_header->un.echo.id 		= htons(getpid());
-	printf("header id = %d\n", icmp_header->un.echo.id);
+	icmp_header->un.echo.id 		= htons(*id);
 	icmp_header->un.echo.sequence 	= htons(*seq);
 }
 
-int		check_packet(int *ttl)
+void	cast_packet(void)
 {
-	t_ctx		*context = get_context();
-	t_pkt		*curr_pkt = &context->curr_pkt;
-	sockaddr_in *dest = (struct sockaddr_in *)context->dest->ai_addr;
+	t_ctx			*context = get_context();
+	t_pkt			*curr_pkt = &context->curr_pkt;
 
-	if (!context->source_dest_ip[0])
-		get_readable_ip_str((struct sockaddr *)&curr_pkt->sender, context->source_dest_ip);
-
-	struct iphdr *ip = (struct iphdr *)curr_pkt->raw_content;
-	int ip_header_len = ip->ihl * 4;  // ihl est en mots de 4 octets
-	struct icmphdr *icmp = (struct icmphdr *)(curr_pkt->raw_content + ip_header_len);
-
-	printf("%d\n", icmp->type);
-	
-	if (curr_pkt->sender.sin_addr.s_addr != dest->sin_addr.s_addr) // PACKET ERROR
-	{
-		printf("wrong sender detected\n");
-		// return (receive_packet(context, ttl));
-	}
-	*ttl = ((struct iphdr *)context->curr_pkt.raw_content)->ttl;
-	context->ping_successes += 1;
-	return (0);
+	curr_pkt->ip_header = (iphdr *)curr_pkt->raw_content;
+	curr_pkt->icmp_header = (icmphdr *)(curr_pkt->raw_content + curr_pkt->ip_header->ihl * 4);
 }
 
-int		receive_packet(uint8_t *ttl)
+int		receive_packet(void)
 {
-	// struct sockaddr_in 	sender;
 	t_ctx			*context = get_context();
-	sockaddr_in  	*dest;
+	unsigned char	*raw_content = context->curr_pkt.raw_content;
 	int				bytes_read;
-	// socklen_t			sender_len = sizeof(sender);
-	// char 				buff[1024] = {0};
 
-	memset(context->curr_pkt.raw_content, 0, 1024);
-	dest = (struct sockaddr_in *)context->dest->ai_addr;
-	bytes_read = recvfrom(context->socket, context->curr_pkt.raw_content, 1024, 0, 
+	memset(raw_content, 0, 1024);
+	bytes_read = recvfrom(context->socket, raw_content, 1024, 0, 
 		(struct sockaddr *)&context->curr_pkt.sender, &context->curr_pkt.sender_len);
 	if (bytes_read == -1)
 	{
@@ -173,9 +185,8 @@ int		receive_packet(uint8_t *ttl)
 			exit_error();
 		}
 	}
-
-
-	return (bytes_read);
+	context->curr_pkt.bytes_read = bytes_read;
+	return (0);
 }
 
 void	send_packet(t_ctx *context, t_icmpping *ping)
@@ -196,11 +207,12 @@ void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str)
 	inet_ntop(AF_INET, &ipAddr, ipaddr_str, INET_ADDRSTRLEN);
 }
 
-void	prep_ping_packet(t_icmpping *ping_packet, int *seq)
+void	prep_ping_packet(t_icmpping *ping_packet)
 {
+	t_ctx 			*context = get_context();
 	struct icmphdr 	icmp_header;
 
-	fill_icmphdr(&icmp_header, seq);
+	fill_icmphdr(&icmp_header, &context->seq, &context->id);
 	ping_packet->header = icmp_header;
 	memset((void *)ping_packet->payload, 0x42, 56);
 	calculate_checksum(ping_packet);
@@ -242,6 +254,7 @@ t_ctx	*get_context(void)
 		context.hostname = NULL;
 		context.times = NULL;
 		context.seq = 1;
+		context.id = getpid();
 		memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
 		init = true;
 		return (&context);
@@ -274,8 +287,8 @@ void	sigint_handler(int code)
 	exit(0);
 }
 
-void	print_output(int bytes_read, uint8_t *ttl, float *time_elapsed)
-{
+void	print_success_output(float *time_elapsed)
+{	
 	t_ctx	*context = get_context();
 
 	if (context->options.verbose)
@@ -285,43 +298,55 @@ void	print_output(int bytes_read, uint8_t *ttl, float *time_elapsed)
 	else
 	{
 		printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
-			bytes_read - sizeof(struct iphdr), 
+			context->curr_pkt.bytes_read + sizeof(struct iphdr),
 			context->source_dest_ip,
 			context->seq, 
-			*ttl, 
+			context->curr_pkt.ip_header->ttl, 
 			*time_elapsed
 		);
 	}
 }
 
+void	print_error_output()
+{
+	t_ctx	*context = get_context();
+
+	printf("%d\n", context->curr_pkt.icmp_header->type);
+}
+
 void	ping_loop(t_ctx *context)
 {
 	t_icmpping		ping_packet;
-	char			ipaddr_str[INET_ADDRSTRLEN];
 	struct timeval  start;
-	int				bytes_read;
 	float			time_elapsed;
-	uint8_t			ttl;
 
-	get_readable_ip_str(context->dest->ai_addr, ipaddr_str);
+	get_readable_ip_str(context->dest->ai_addr, context->source_dest_ip);
 	
-	printf("PING %s (%s): %ld bytes of data.\n", 
-		context->hostname, ipaddr_str, sizeof(ping_packet.payload));
+	if (context->options.verbose)
+		printf("PING %s (%s): %ld bytes of data.\n", 
+			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload));
+	else 
+		printf("PING %s (%s): %ld bytes of data.\n", 
+			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload));
 
 	while (1)
 	{
-		prep_ping_packet(&ping_packet, &context->seq);
+		prep_ping_packet(&ping_packet);
 		gettimeofday(&start, NULL);
 		send_packet(context, &ping_packet);
-		bytes_read = receive_packet(&ttl);
-		if (bytes_read > 0)
-		{
-			time_elapsed = get_time_elapsed(&start);
-			store_time(context, time_elapsed);
-			print_output(bytes_read, &ttl, &time_elapsed);
-			sleep(1);
-		}
 		context->seq++;
+		if (receive_packet() == -1) // timeout
+			continue;
+		time_elapsed = get_time_elapsed(&start);
+		cast_packet();
+		if (context->curr_pkt.icmp_header->type == 0) // success
+		{
+			store_time(context, time_elapsed);
+			print_success_output(&time_elapsed);
+		}
+		else
+			print_error_output();
+		sleep(1);
 	}
 }
 

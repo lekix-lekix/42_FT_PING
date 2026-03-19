@@ -36,6 +36,7 @@
 typedef struct sockaddr_in sockaddr_in;
 typedef struct addrinfo addrinfo;
 typedef struct iphdr iphdr;
+typedef struct icmphdr icmphdr;
 
 typedef struct s_lst
 {
@@ -45,7 +46,7 @@ typedef struct s_lst
 
 typedef struct s_icmpping
 {
-    struct icmphdr      header;
+    icmphdr             header;
     char                payload[56];
 } t_icmpping;
 
@@ -57,8 +58,9 @@ typedef struct s_opt
 typedef struct t_pkt
 {
     int                 bytes_read;
-    iphdr               ip_header;
-	char 				raw_content[1024];
+    iphdr               *ip_header;
+    icmphdr             *icmp_header;
+	unsigned char 		raw_content[1024];
 	socklen_t			sender_len;;
 	sockaddr_in 	    sender;
 
@@ -68,6 +70,7 @@ typedef struct s_ctx
 {
     t_opt               options;
     int                 socket;
+    int                 id;
     char                *hostname;
     addrinfo            *dest;
     char                source_dest_ip[INET_ADDRSTRLEN];
