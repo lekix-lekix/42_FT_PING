@@ -70,7 +70,7 @@ char  *icmp_error_str(int type, int code)
     {
         switch (code)
         {
-            case 0: return "TTL exceeded in transit";
+            case 0: return "Time to live exceeded";
             case 1: return "Fragment reassembly time exceeded";
         }
     }
@@ -87,7 +87,7 @@ char  *icmp_error_str(int type, int code)
 
 void	setup_socket(int *sock, struct addrinfo *res_list)
 {
-	struct timeval	timeout = {1, 0};
+	// struct timeval	timeout = {1, 0};
 	int				opt_error = 0;
 
 	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
@@ -95,9 +95,9 @@ void	setup_socket(int *sock, struct addrinfo *res_list)
 		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (*sock != -1)
 		{
-			// int ttl = 1;
-			opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-			// opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+			int ttl = 1;
+			// opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+			opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 			break ;
 		}
 	}
@@ -291,27 +291,32 @@ void	print_success_output(float *time_elapsed)
 {	
 	t_ctx	*context = get_context();
 
-	if (context->options.verbose)
-	{
-
-	}
-	else
-	{
-		printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
-			context->curr_pkt.bytes_read + sizeof(struct iphdr),
-			context->source_dest_ip,
-			context->seq, 
-			context->curr_pkt.ip_header->ttl, 
-			*time_elapsed
-		);
-	}
+	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
+		context->curr_pkt.bytes_read + sizeof(struct iphdr),
+		context->source_dest_ip,
+		context->seq - 1, 
+		context->curr_pkt.ip_header->ttl, 
+		*time_elapsed
+	);
 }
 
 void	print_error_output()
 {
-	t_ctx	*context = get_context();
+	t_ctx		*context = get_context();
+	icmphdr		*icmp = context->curr_pkt.icmp_header;
 
-	printf("%d\n", context->curr_pkt.icmp_header->type);
+	if (context->options.verbose)
+	{
+		
+	}
+	else
+	{
+		printf("%ld bytes from %s: %s\n", 
+			context->curr_pkt.bytes_read - sizeof(struct iphdr),
+			context->source_dest_ip,
+			icmp_error_str(icmp->type, icmp->code)
+		);
+	}
 }
 
 void	ping_loop(t_ctx *context)
@@ -323,10 +328,12 @@ void	ping_loop(t_ctx *context)
 	get_readable_ip_str(context->dest->ai_addr, context->source_dest_ip);
 	
 	if (context->options.verbose)
-		printf("PING %s (%s): %ld bytes of data.\n", 
-			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload));
-	else 
-		printf("PING %s (%s): %ld bytes of data.\n", 
+		printf("PING %s (%s): %ld data bytes, id 0x%x = %d\n", 
+			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload),
+			context->id, context->id
+		);
+	else
+		printf("PING %s (%s): %ld data bytes\n", 
 			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload));
 
 	while (1)
@@ -341,6 +348,7 @@ void	ping_loop(t_ctx *context)
 		cast_packet();
 		if (context->curr_pkt.icmp_header->type == 0) // success
 		{
+			context->ping_successes += 1;
 			store_time(context, time_elapsed);
 			print_success_output(&time_elapsed);
 		}
