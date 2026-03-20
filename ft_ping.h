@@ -75,7 +75,7 @@ typedef struct s_ctx
     addrinfo            *dest;
     char                source_dest_ip[INET_ADDRSTRLEN];
     t_lst               *times;
-    t_pkt               curr_pkt;
+    t_pkt               current_pkt;
     int                 ping_successes;
     int                 seq;
 } t_ctx;

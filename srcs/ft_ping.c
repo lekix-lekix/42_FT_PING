@@ -160,21 +160,21 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
 void	cast_packet(void)
 {
 	t_ctx			*context = get_context();
-	t_pkt			*curr_pkt = &context->curr_pkt;
+	t_pkt			*current_pkt = &context->current_pkt;
 
-	curr_pkt->ip_header = (iphdr *)curr_pkt->raw_content;
-	curr_pkt->icmp_header = (icmphdr *)(curr_pkt->raw_content + curr_pkt->ip_header->ihl * 4);
+	current_pkt->ip_header = (iphdr *)current_pkt->raw_content;
+	current_pkt->icmp_header = (icmphdr *)(current_pkt->raw_content + current_pkt->ip_header->ihl * 4);
 }
 
 int		receive_packet(void)
 {
 	t_ctx			*context = get_context();
-	unsigned char	*raw_content = context->curr_pkt.raw_content;
+	unsigned char	*raw_content = context->current_pkt.raw_content;
 	int				bytes_read;
 
 	memset(raw_content, 0, 1024);
 	bytes_read = recvfrom(context->socket, raw_content, 1024, 0, 
-		(struct sockaddr *)&context->curr_pkt.sender, &context->curr_pkt.sender_len);
+		(struct sockaddr *)&context->current_pkt.sender, &context->current_pkt.sender_len);
 	if (bytes_read == -1)
 	{
 		if (errno == EAGAIN)
@@ -185,7 +185,7 @@ int		receive_packet(void)
 			exit_error();
 		}
 	}
-	context->curr_pkt.bytes_read = bytes_read;
+	context->current_pkt.bytes_read = bytes_read;
 	return (0);
 }
 
@@ -292,30 +292,61 @@ void	print_success_output(float *time_elapsed)
 	t_ctx	*context = get_context();
 
 	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
-		context->curr_pkt.bytes_read + sizeof(struct iphdr),
+		context->current_pkt.bytes_read + sizeof(struct iphdr),
 		context->source_dest_ip,
 		context->seq - 1, 
-		context->curr_pkt.ip_header->ttl, 
+		context->current_pkt.ip_header->ttl, 
 		*time_elapsed
 	);
+}
+
+void	print_iphdr_hexdump()
+{
+	iphdr			*ip_outer = (iphdr *)get_context()->current_pkt.raw_content;
+	icmphdr		 	*icmp_hdr = (icmphdr *)(get_context()->current_pkt.raw_content + ip_outer->ihl * 4);
+	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
+	uint8_t 		*content = (uint8_t *)sent_iphdr;
+	int				iphdr_size = sent_iphdr->ihl * 4;
+	
+	printf("%s", "IP Hdr Dump:\n ");
+	for (int i = 0; i < iphdr_size; i++)
+	{
+		printf("%02x", content[i]);
+		if (i % 2 != 0)
+			printf(" ");
+	}
+	printf("\n");
+	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src	Dst	Data\n");
+	printf(" %d  %d  %02x 00%02x %02x %02x %d %d %d %d %d %d", 
+		sent_iphdr->version, 
+		sent_iphdr->ihl, 
+		sent_iphdr->tos, 
+		ntohs(sent_iphdr->tot_len), 
+		ntohs(sent_iphdr->id),
+		*(unsigned char *)sent_iphdr + 48, 
+		sent_iphdr->frag_off,
+		sent_iphdr->ttl,
+		sent_iphdr->protocol,
+		sent_iphdr->check,
+		sent_iphdr->saddr,
+		sent_iphdr->daddr
+	);
+	printf("\n");
 }
 
 void	print_error_output()
 {
 	t_ctx		*context = get_context();
-	icmphdr		*icmp = context->curr_pkt.icmp_header;
+	icmphdr		*icmp = context->current_pkt.icmp_header;
 
+	printf("%ld bytes from %s: %s\n", 
+		context->current_pkt.bytes_read - sizeof(struct iphdr),
+		context->source_dest_ip,
+		icmp_error_str(icmp->type, icmp->code)
+	);
 	if (context->options.verbose)
 	{
-		
-	}
-	else
-	{
-		printf("%ld bytes from %s: %s\n", 
-			context->curr_pkt.bytes_read - sizeof(struct iphdr),
-			context->source_dest_ip,
-			icmp_error_str(icmp->type, icmp->code)
-		);
+		print_iphdr_hexdump();
 	}
 }
 
@@ -346,7 +377,7 @@ void	ping_loop(t_ctx *context)
 			continue;
 		time_elapsed = get_time_elapsed(&start);
 		cast_packet();
-		if (context->curr_pkt.icmp_header->type == 0) // success
+		if (context->current_pkt.icmp_header->type == 0) // success
 		{
 			context->ping_successes += 1;
 			store_time(context, time_elapsed);
