@@ -6,7 +6,7 @@
 #    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/03/09 12:05:19 by kipouliq          #+#    #+#              #
-#    Updated: 2026/03/10 17:19:19 by kipouliq         ###   ########.fr        #
+#    Updated: 2026/03/18 13:33:02 by kipouliq         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -42,10 +42,9 @@ $(NAME) : $(OBJS)
 	$(LINK)
 	sudo setcap cap_net_raw=ep ./$(NAME)
 
-# bonus : $(NAME_BONUS)
-
-# $(NAME_BONUS) : $(BONUS_OBJS)
-# 	$(CC) $(FLAGS) -g3 $(BONUS_OBJS) -o $(NAME_BONUS)
+valgrind :
+	$(CC) $(FLAGS) -o $(NAME) $(OBJS) -g3
+	sudo valgrind --leak-check=full --show-leak-kinds=all ./ft_ping $(ARGS)
 
 valgrind : $(OBJS)
 	$(LINK)
@@ -61,4 +60,4 @@ fclean : clean
 re : fclean
 	make all
 
-.PHONY : all bonus clean fclean re
+.PHONY : all bonus clean fclean re valgrind

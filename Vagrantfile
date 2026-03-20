@@ -25,11 +25,11 @@ Host github.com
   IdentityFile ~/.ssh/id_rsa
   StrictHostKeyChecking no
 EOF
-      chmod 600 ~/.ssh/config
-
-      ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-
-      git clone git@github.com:lekix-lekix/42_FT_PING.git ft_ping
+    chmod 600 ~/.ssh/config
+    
+    ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+    
+    git clone git@github.com:lekix-lekix/42_FT_PING.git ft_ping
     SHELL
   end
 end
