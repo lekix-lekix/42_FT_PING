@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 
 typedef struct sockaddr_in sockaddr_in;
 typedef struct addrinfo addrinfo;
@@ -53,6 +54,9 @@ typedef struct s_icmpping
 typedef struct s_opt
 {
     bool                verbose;
+    bool                ttl;
+    bool                flood;
+    int                 ttl_value;
 } t_opt;
 
 typedef struct t_pkt
@@ -93,5 +97,27 @@ float   calculate_avg(t_lst **lst);
 float	get_min(t_lst **lst);
 float	get_max(t_lst **lst);
 float	get_standard_deviation(t_lst **lst);
+void	store_time(t_ctx *context, float time);
+
+// UTILS
+void	exit_error(void);
+
+
+// PACKET HANDLING
+void	prep_ping_packet(t_icmpping *ping_packet);
+void	send_packet(t_icmpping *ping);
+int		receive_packet(void);
+float	get_time_elapsed(struct timeval *starting_time);
+
+// PRINT
+void    print_help(void);
+void    print_version(void);
+void	print_success_output(float *time_elapsed);
+void	print_error_output(void);
+void	print_begin_output(t_icmpping *ping_packet);
+
+// NETWORK
+void	resolve_host(char *host, struct addrinfo **dest);
+void	setup_socket(int *sock, struct addrinfo *res_list);
 
 #endif

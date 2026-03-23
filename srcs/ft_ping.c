@@ -10,267 +10,32 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// 1. Parse arguments  -> done
-// 2. Resolve hostname (if necessary)  -> done
-// -. Setup RAW Socket -> done ?
-// === PING LOOP === // 
-// 3. Construct ip + IMCP header -> done
-// 4. Wrap it in ip header (automatic ?) -> automatic, done 
-// -. start timer -> done
-// 4. send packet -> done
-// 5. Receive packet -> done
-// -. calculate time -> done but buggy
-// 6. Print it -> done
-// ===  END LOOP ===
-// -. STATS :
-// - store individual times -> done
-// - calculate : min/avg/max/stddev -> done
-// 7. Handle signals for ctrl c (and sigalarm ?) -> done
-// ! - VERBOSE
-
-// BUGS
-// -. Seq start at 0 on inetutils ffs
-// -. Timestamps sometimes wrong
-// -. more than 1 ping is messed up
-
-// if sender != dest -> packet error
-
-// PLAN
-// -> fix parsing
-// -> do normal verbose output
-// -> fix packet error detection
+// BONUSES
+// --ttl
+// -f flood
+// -p pattern (fill payload)
+// -i interval
+// -w timeout
 
 #include "../ft_ping.h"
 
-void	exit_error(void)
-{
-	t_ctx *context = get_context();
+#define TIMER_START(t) struct timespec t##_start, t##_end; \
+                       clock_gettime(CLOCK_MONOTONIC, &t##_start)
 
-	freeaddrinfo(context->dest);
-	close(context->socket);
-	ft_lstclear(&context->times, free);
-	exit(EXIT_FAILURE);
-}
+#define TIMER_STOP(t)  clock_gettime(CLOCK_MONOTONIC, &t##_end)
 
-char  *icmp_error_str(int type, int code)
-{
-    if (type == 3) // Destination Unreachable
-    {
-        switch (code)
-        {
-            case 0: return "Net Unreachable";
-            case 1: return "Host Unreachable";
-            case 2: return "Protocol Unreachable";
-            case 3: return "Port Unreachable";
-            case 4: return "Fragmentation Needed";
-            case 5: return "Source Route Failed";
-        }
-    }
-    else if (type == 11) // Time Exceeded
-    {
-        switch (code)
-        {
-            case 0: return "Time to live exceeded";
-            case 1: return "Fragment reassembly time exceeded";
-        }
-    }
-    else if (type == 12) // Parameter Problem
-    {
-        switch (code)
-        {
-            case 0: return "Pointer indicates the error";
-            case 1: return "Missing a required option";
-        }
-    }
-    return "Unknown";
-}
-
-void	setup_socket(int *sock, struct addrinfo *res_list)
-{
-	// struct timeval	timeout = {1, 0};
-	int				opt_error = 0;
-
-	for (struct addrinfo *curr = res_list; curr != NULL; curr = curr->ai_next)
-	{
-		*sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-		if (*sock != -1)
-		{
-			int ttl = 1;
-			// opt_error = setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-			opt_error = setsockopt(*sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
-			break ;
-		}
-	}
-	if (*sock == -1 || opt_error == -1)
-	{
-		if (*sock == -1)
-			perror("socket");
-		else if (opt_error == -1)
-			perror("setsockopt");
-		exit_error();
-	}
-}
-
-void	resolve_host(char *host, struct addrinfo **dest)
-{
-	struct addrinfo	hints;
-	int				err;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET; // ipv4
-	hints.ai_socktype = SOCK_RAW; // raw socket
-	err = getaddrinfo(host, NULL, &hints, &(*dest));
-	if (err != 0) // handle other cases
-	{
-		if (err == -2)
-			dprintf(STDERR, "ping: unknown host\n");
-		else
-			perror("getaddrinfo");
-		exit_error();
-	}
-}
-
-void	calculate_checksum(t_icmpping *ping)
-{	
-	int 		res = 0;
-	uint16_t 	*ptr;
-
-	ptr = (uint16_t *)ping;
-	for (int i = 0; i < 32; i++)
-	{
-		res += ptr[i];
-		if (res > 0xFFFF)
-		{
-			res += res >> 16;
-			res = 0xFFFF & res;
-		}
-	}
-	ping->header.checksum = ~res;
-}
-
-void	fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
-{
-	icmp_header->type 				= ICMP_ECHO;
-	icmp_header->code 				= 0;
-	icmp_header->checksum 			= 0;
-	icmp_header->un.echo.id 		= htons(*id);
-	icmp_header->un.echo.sequence 	= htons(*seq);
-}
-
-void	cast_packet(void)
-{
-	t_ctx			*context = get_context();
-	t_pkt			*current_pkt = &context->current_pkt;
-
-	current_pkt->ip_header = (iphdr *)current_pkt->raw_content;
-	current_pkt->icmp_header = (icmphdr *)(current_pkt->raw_content + current_pkt->ip_header->ihl * 4);
-}
-
-int		receive_packet(void)
-{
-	t_ctx			*context = get_context();
-	unsigned char	*raw_content = context->current_pkt.raw_content;
-	int				bytes_read;
-
-	memset(raw_content, 0, 1024);
-	bytes_read = recvfrom(context->socket, raw_content, 1024, 0, 
-		(struct sockaddr *)&context->current_pkt.sender, &context->current_pkt.sender_len);
-	if (bytes_read == -1)
-	{
-		if (errno == EAGAIN)
-			return (-1);
-		else
-		{
-			perror("recvfrom");
-			exit_error();
-		}
-	}
-	context->current_pkt.bytes_read = bytes_read;
-	return (0);
-}
-
-void	send_packet(t_ctx *context, t_icmpping *ping)
-{
-	int err = sendto(context->socket, (const void *)ping, sizeof(*ping), 0,
-		(struct sockaddr *)context->dest->ai_addr, context->dest->ai_addrlen);
-	if (err == -1)
-	{
-		perror("sendto");
-		exit_error();
-	}
-}
-
-void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str)
-{
-	struct sockaddr_in *addr = (struct sockaddr_in *)ai_addr;
-	struct in_addr ipAddr = addr->sin_addr;
-	inet_ntop(AF_INET, &ipAddr, ipaddr_str, INET_ADDRSTRLEN);
-}
-
-void	prep_ping_packet(t_icmpping *ping_packet)
-{
-	t_ctx 			*context = get_context();
-	struct icmphdr 	icmp_header;
-
-	fill_icmphdr(&icmp_header, &context->seq, &context->id);
-	ping_packet->header = icmp_header;
-	memset((void *)ping_packet->payload, 0x42, 56);
-	calculate_checksum(ping_packet);
-}
-
-float	get_time_elapsed(struct timeval *starting_time)
-{
-	struct timeval	current_time;
-	float			time_elapsed;
-
-	gettimeofday(&current_time, NULL);
-	time_elapsed = ((current_time.tv_sec - starting_time->tv_sec) * 1000)
-		+ ((current_time.tv_usec - starting_time->tv_usec) * 0.001);
-	return (time_elapsed);
-}
-
-void	store_time(t_ctx *context, float time)
-{
-	t_lst	*node;
-	float	*new_time;
-
-	new_time = malloc(sizeof(float));
-	if (!new_time)
-		exit_error();
-	*new_time = time;
-	node = ft_lstnew(new_time);
-	if (!node)
-		exit_error();
-	ft_lstadd_back(&context->times, node);
-}
-
-t_ctx	*get_context(void)
-{
-	static bool	 	init = false;
-	static t_ctx 	context;
-
-	if (!init)
-	{
-		context.hostname = NULL;
-		context.times = NULL;
-		context.seq = 1;
-		context.id = getpid();
-		memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
-		init = true;
-		return (&context);
-	}
-	return (&context);
-}
+#define TIMER_MS(t)    ((t##_end.tv_sec  - t##_start.tv_sec)  * 1000.0 \
+                      + (t##_end.tv_nsec - t##_start.tv_nsec) / 1e6)
 
 void	sigint_handler(int code)
 {
 	t_ctx			*context = get_context();
-	int				packet_loss = 100 - (context->ping_successes / context->seq * 100);
+	int				packet_loss = 100 - (context->ping_successes / (context->seq) * 100);
 
 	(void) code;
 	printf("--- %s ping statistics ---\n", context->hostname);
 	printf("%d packets transmitted, %d packets received, %d%% packet loss\n",
-		context->seq, context->ping_successes, packet_loss );
+		context->seq, context->ping_successes, packet_loss);
 	
 	if (context->times)
 	{
@@ -287,147 +52,6 @@ void	sigint_handler(int code)
 	exit(0);
 }
 
-void	print_success_output(float *time_elapsed)
-{	
-	t_ctx	*context = get_context();
-
-	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
-		context->current_pkt.bytes_read + sizeof(struct iphdr),
-		context->source_dest_ip,
-		context->seq - 1, 
-		context->current_pkt.ip_header->ttl, 
-		*time_elapsed
-	);
-}
-
-uint16_t	get_frag_flags(uint16_t frag_off)
-{
-	frag_off = ntohs(frag_off);
-	
-	int reserved = (frag_off >> 15) & 1;
-	int df = (frag_off >> 14) & 1;
-	int mf = (frag_off >> 13) & 1;
-	
-	return (reserved | df << 1 | mf << 2);
-}
-
-uint16_t	get_frag_offset(uint16_t frag_off)
-{
-	return (ntohs(frag_off) & 0x0f);
-}
-
-void	print_iphdr_hexdump()
-{
-	iphdr			*ip_outer = (iphdr *)get_context()->current_pkt.raw_content;
-	icmphdr		 	*icmp_hdr = (icmphdr *)(get_context()->current_pkt.raw_content + ip_outer->ihl * 4);
-	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
-	uint8_t 		*content = (uint8_t *)sent_iphdr;
-	int				iphdr_size = sent_iphdr->ihl * 4;
-	char			src_ip_addr[INET_ADDRSTRLEN];
-	char			dest_ip_addr[INET_ADDRSTRLEN];
-	
-	inet_ntop(AF_INET, &sent_iphdr->saddr, src_ip_addr, INET_ADDRSTRLEN);
-	inet_ntop(AF_INET, &sent_iphdr->daddr, dest_ip_addr, INET_ADDRSTRLEN);
-
-	printf("%s", "IP Hdr Dump:\n ");
-	for (int i = 0; i < iphdr_size; i++)
-	{
-		printf("%02x", content[i]);
-		if (i % 2 != 0)
-			printf(" ");
-	}
-	printf("\n");
-	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src	Dst	Data\n");
-	printf(" %d  %d  %02x 00%02x %02x   %d %04d  %02d  %02d %04x %s  %s", 
-		sent_iphdr->version, 
-		sent_iphdr->ihl, 
-		sent_iphdr->tos, 
-		ntohs(sent_iphdr->tot_len), 
-		ntohs(sent_iphdr->id),
-		get_frag_flags(sent_iphdr->frag_off), 
-		get_frag_offset(sent_iphdr->frag_off),
-		sent_iphdr->ttl,
-		sent_iphdr->protocol,
-		ntohs(sent_iphdr->check),
-		src_ip_addr,
-		dest_ip_addr
-	);
-	printf("\n");
-}
-
-void	print_icmp()
-{
-	iphdr			*ip_outer = (iphdr *)get_context()->current_pkt.raw_content;
-	icmphdr		 	*icmp_hdr = (icmphdr *)(get_context()->current_pkt.raw_content + ip_outer->ihl * 4);
-	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
-	icmphdr			*sent_icmp = (icmphdr *)((char *)sent_iphdr + sent_iphdr->ihl * 4);
-
-
-	printf("ICMP: type %d, code %d, size %ld, id 0x%04x, seq 0x%04x\n",
-		sent_icmp->type,
-		sent_icmp->code,
-		sizeof(t_icmpping),
-		ntohs(sent_icmp->un.echo.id),
-		ntohs(sent_icmp->un.echo.sequence)
-	);
-}
-
-void	print_error_output()
-{
-	t_ctx		*context = get_context();
-	icmphdr		*icmp = context->current_pkt.icmp_header;
-
-	printf("%ld bytes from %s: %s\n", 
-		context->current_pkt.bytes_read - sizeof(struct iphdr),
-		context->source_dest_ip,
-		icmp_error_str(icmp->type, icmp->code)
-	);
-	if (context->options.verbose)
-	{
-		print_iphdr_hexdump();
-		print_icmp();
-	}
-}
-
-void	ping_loop(t_ctx *context)
-{
-	t_icmpping		ping_packet;
-	struct timeval  start;
-	float			time_elapsed;
-
-	get_readable_ip_str(context->dest->ai_addr, context->source_dest_ip);
-	
-	if (context->options.verbose)
-		printf("PING %s (%s): %ld data bytes, id 0x%x = %d\n", 
-			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload),
-			context->id, context->id
-		);
-	else
-		printf("PING %s (%s): %ld data bytes\n", 
-			context->hostname, context->source_dest_ip, sizeof(ping_packet.payload));
-
-	while (1)
-	{
-		prep_ping_packet(&ping_packet);
-		gettimeofday(&start, NULL);
-		send_packet(context, &ping_packet);
-		context->seq++;
-		if (receive_packet() == -1) // timeout
-			continue;
-		time_elapsed = get_time_elapsed(&start);
-		cast_packet();
-		if (context->current_pkt.icmp_header->type == 0) // success
-		{
-			context->ping_successes += 1;
-			store_time(context, time_elapsed);
-			print_success_output(&time_elapsed);
-		}
-		else
-			print_error_output();
-		sleep(1);
-	}
-}
-
 void	setup_signal(void)
 {
 	struct sigaction act;
@@ -437,14 +61,42 @@ void	setup_signal(void)
 	sigaction(SIGINT, &act, NULL);
 }
 
+void	ping_loop(t_ctx *context)
+{
+	t_icmpping		ping_packet;
+	struct timeval  start;
+	float			time_elapsed;
+
+	print_begin_output(&ping_packet);
+
+	while (1)
+	{
+		gettimeofday(&start, NULL);
+		send_packet(&ping_packet);
+		context->seq++;
+		if (receive_packet() == -1) // timeout
+			continue;
+		time_elapsed = get_time_elapsed(&start);
+		if (context->current_pkt.icmp_header->type == 0) // success
+		{
+			context->ping_successes += 1;
+			store_time(context, time_elapsed);
+			print_success_output(&time_elapsed);
+		}
+		else
+			print_error_output();
+		if (context->options.flood == false)
+			sleep(1);
+	}
+}
+
 int		main(int argc, char **argv)
 {
 	t_ctx			*context;
 
-	if (argc < 2) // Will change if bonuses implemented
+	if (argc < 2)
 	{
-		dprintf(STDERR, "ping: missing host operand\n \
-			Try 'ping -?' for more information.\n");
+		dprintf(STDERR, "ping: missing host operand\nTry 'ping -?' for more information.\n");
 			exit(64);
 	}
 	context = get_context();

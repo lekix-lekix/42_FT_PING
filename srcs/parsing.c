@@ -19,39 +19,59 @@ void invalid_option(char c)
     exit(64);
 }
 
-void print_help(void)
+void unrecognized_option(char *str)
 {
-    printf("%s\n", "Usage: ping [OPTION...] HOST ...");
-    printf("%s\n", "Send ICMP ECHO_REQUEST packets to network hosts.");
-    printf("%s\n", "");
-    printf("%s\n", " Valid options:");
-    printf("%s\n", "");
-    printf("%s\n", "  -v        verbose output");
-    printf("%s\n", "  -?        give this help list");
-    printf("%s\n", "  -V        print program version");
-    printf("%s\n", "");
-    printf("%s\n", "Report bugs to <do_not_report_bugs_please@42.fr>.");
-    exit(EXIT_SUCCESS);
+    dprintf(STDERR, "ping: unrecognized option -- '%s'\n", str);
+    dprintf(STDERR, "Try 'ping -?' for more information.\n");
+    exit(64);
 }
 
-void print_version(void)
+void invalid_value(char *str)
 {
-    printf("%s\n", "ft_ping (kipouliq's copy of GNU inetutils-ping) 1.0");
-    printf("%s\n", "Copyright (C) 2026 Free Software Foundation, Inc.");
-    printf("%s\n", "License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.");
-    printf("%s\n", "This is free software: you are free to change and redistribute it.");
-    printf("%s\n", "There is NO WARRANTY, to the extent permitted by law.");
-    printf("%s\n", "");
-    printf("%s\n", "Written by kipouliq at 42.");
-    exit(EXIT_SUCCESS);
+    dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, str);
+    exit(EXIT_FAILURE);
+}
+
+bool isnum(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+
+bool isallnum(char *str)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (isnum(str[i]) == false)
+            return false;
+    }
+    return true;
+}
+
+void register_ttl(char *str)
+{
+    t_ctx   *context = get_context();
+    char    *value_s = str + 5;
+    int     ttl_value = 0;
+
+    if (isallnum(value_s) == false)
+        invalid_value(value_s);
+    ttl_value = atoi(value_s);
+    if (ttl_value > 255)
+    {
+        dprintf(STDERR, "ping: option value too big: %d\n", ttl_value);
+        exit(EXIT_FAILURE);
+    }
+    context->options.ttl = true;
+    context->options.ttl_value = ttl_value;
 }
 
 void parse_option(char *opt)
 {
     t_ctx   *context = get_context();
+    size_t  len = strlen(opt);
 
     opt += 1;
-	for (int i = 0; opt[i]; i++)  // loop needed foor bonuses
+	for (size_t i = 0; i < len; i++)
 	{
 		if (opt[0] == '-' && strlen(opt) == 1)
 			return ;
@@ -59,14 +79,27 @@ void parse_option(char *opt)
 			print_help();
 		else if (opt[0] == 'V')
 			print_version();
-        else if (opt[0] == 'v')
+        else if (opt[0] == 'v' || strncmp(opt, "-verbose", strlen(opt)) == 0)
         {
             context->options.verbose = true;
-            printf("verbose \n");
+            return ;
+        }
+        else if (strncmp(opt, "-ttl=", 5) == 0)
+        {
+            register_ttl(opt);
+            return ;
+        }
+        else if (opt[0] == 'f' || strncmp(opt, "-flood", strlen(opt)) == 0)
+        {
+            context->options.flood = true;
+            return ;
         }
 		else
         {
-			invalid_option(opt[0]);
+            if (opt[0] == '-')
+                unrecognized_option(opt);
+            else
+			    invalid_option(opt[0]);
             return ;
         }
 	}

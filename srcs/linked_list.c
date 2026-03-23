@@ -128,3 +128,18 @@ float	get_standard_deviation(t_lst **lst)
 	free(deviations);
 	return (sqrt(variance));
 }
+
+void	store_time(t_ctx *context, float time)
+{
+	t_lst	*node;
+	float	*new_time;
+
+	new_time = malloc(sizeof(float));
+	if (!new_time)
+		exit_error();
+	*new_time = time;
+	node = ft_lstnew(new_time);
+	if (!node)
+		exit_error();
+	ft_lstadd_back(&context->times, node);
+}

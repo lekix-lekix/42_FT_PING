@@ -16,7 +16,11 @@ NAME = ft_ping
 
 SRC = ./srcs/ft_ping.c \
 	./srcs/parsing.c \
-	./srcs/linked_list.c
+	./srcs/linked_list.c \
+	./srcs/network.c \
+	./srcs/packet_handling.c \
+	./srcs/print.c \
+	./srcs/utils.c
 		
 OBJ = $(SRC:.c=.o)
 
