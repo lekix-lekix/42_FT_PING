@@ -300,6 +300,22 @@ void	print_success_output(float *time_elapsed)
 	);
 }
 
+uint16_t	get_frag_flags(uint16_t frag_off)
+{
+	frag_off = ntohs(frag_off);
+	
+	int reserved = (frag_off >> 15) & 1;
+	int df = (frag_off >> 14) & 1;
+	int mf = (frag_off >> 13) & 1;
+	
+	return (reserved | df << 1 | mf << 2);
+}
+
+uint16_t	get_frag_offset(uint16_t frag_off)
+{
+	return (ntohs(frag_off) & 0x0f);
+}
+
 void	print_iphdr_hexdump()
 {
 	iphdr			*ip_outer = (iphdr *)get_context()->current_pkt.raw_content;
@@ -307,7 +323,12 @@ void	print_iphdr_hexdump()
 	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
 	uint8_t 		*content = (uint8_t *)sent_iphdr;
 	int				iphdr_size = sent_iphdr->ihl * 4;
+	char			src_ip_addr[INET_ADDRSTRLEN];
+	char			dest_ip_addr[INET_ADDRSTRLEN];
 	
+	inet_ntop(AF_INET, &sent_iphdr->saddr, src_ip_addr, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &sent_iphdr->daddr, dest_ip_addr, INET_ADDRSTRLEN);
+
 	printf("%s", "IP Hdr Dump:\n ");
 	for (int i = 0; i < iphdr_size; i++)
 	{
@@ -317,21 +338,38 @@ void	print_iphdr_hexdump()
 	}
 	printf("\n");
 	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src	Dst	Data\n");
-	printf(" %d  %d  %02x 00%02x %02x %02x %d %d %d %d %d %d", 
+	printf(" %d  %d  %02x 00%02x %02x   %d %04d  %02d  %02d %04x %s  %s", 
 		sent_iphdr->version, 
 		sent_iphdr->ihl, 
 		sent_iphdr->tos, 
 		ntohs(sent_iphdr->tot_len), 
 		ntohs(sent_iphdr->id),
-		*(unsigned char *)sent_iphdr + 48, 
-		sent_iphdr->frag_off,
+		get_frag_flags(sent_iphdr->frag_off), 
+		get_frag_offset(sent_iphdr->frag_off),
 		sent_iphdr->ttl,
 		sent_iphdr->protocol,
-		sent_iphdr->check,
-		sent_iphdr->saddr,
-		sent_iphdr->daddr
+		ntohs(sent_iphdr->check),
+		src_ip_addr,
+		dest_ip_addr
 	);
 	printf("\n");
+}
+
+void	print_icmp()
+{
+	iphdr			*ip_outer = (iphdr *)get_context()->current_pkt.raw_content;
+	icmphdr		 	*icmp_hdr = (icmphdr *)(get_context()->current_pkt.raw_content + ip_outer->ihl * 4);
+	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
+	icmphdr			*sent_icmp = (icmphdr *)((char *)sent_iphdr + sent_iphdr->ihl * 4);
+
+
+	printf("ICMP: type %d, code %d, size %ld, id 0x%04x, seq 0x%04x\n",
+		sent_icmp->type,
+		sent_icmp->code,
+		sizeof(t_icmpping),
+		ntohs(sent_icmp->un.echo.id),
+		ntohs(sent_icmp->un.echo.sequence)
+	);
 }
 
 void	print_error_output()
@@ -347,6 +385,7 @@ void	print_error_output()
 	if (context->options.verbose)
 	{
 		print_iphdr_hexdump();
+		print_icmp();
 	}
 }
 
