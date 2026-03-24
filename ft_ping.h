@@ -55,8 +55,9 @@ typedef struct s_opt
 {
     bool                verbose;
     bool                ttl;
-    bool                flood;
+    bool                timeout;
     int                 ttl_value;
+    int                 timeout_value;
 } t_opt;
 
 typedef struct t_pkt

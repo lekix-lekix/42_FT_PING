@@ -26,7 +26,6 @@ void	init_options(t_opt *options)
 {
 	options->verbose = false;
 	options->ttl = false;
-	options->flood = false;
 	options->ttl_value = -1;
 }
 

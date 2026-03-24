@@ -12,10 +12,13 @@
 
 // BONUSES
 // --ttl
-// -f flood
-// -p pattern (fill payload)
-// -i interval
-// -w timeout
+// -W --wait for N seconds for response	(INT_MAX)
+// -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first chars taken, in hex
+// -i --interval=NUMBER interval (LONG INT MAX)
+// -w --timeout=N (MAX_INT) stop after N seconds 
+
+// vagrant@debian12:~/ft_ping$ ping -p --ttl=1  1.1.1.1
+// ping: error in pattern near --ttl=1
 
 #include "../ft_ping.h"
 
@@ -27,31 +30,12 @@
 #define TIMER_MS(t)    ((t##_end.tv_sec  - t##_start.tv_sec)  * 1000.0 \
                       + (t##_end.tv_nsec - t##_start.tv_nsec) / 1e6)
 
-void	print_flood_dots(void)
-{
-	t_ctx	*context = get_context();
-	int		misses = context->seq - context->ping_successes;
-	char	*str = NULL;
-
-	if (misses <= 1)
-		return ;
-	str = malloc(sizeof(char) * (misses + 1));
-	str[misses - 1] = '\0';
-	if (!str)
-		exit_error();
-	for (int i = 0; i < misses; i++)
-		str[i] = '.';
-	printf("%s", str);
-}
-
 void	sigint_handler(int code)
 {
 	t_ctx			*context = get_context();
 	float			packet_loss = (float)context->seq / (float)context->ping_successes;
 
 	(void) code;
-	if (context->options.flood)
-		print_flood_dots();
 	printf("--- %s ping statistics ---\n", context->hostname);
 	printf("%d packets transmitted, %d packets received, %.0f%% packet loss\n",
 		context->seq, context->ping_successes, packet_loss == 1 ? 0 : packet_loss);
@@ -104,8 +88,7 @@ void	ping_loop(t_ctx *context)
 		}
 		else
 			print_error_output();
-		if (context->options.flood == false)
-			sleep(1);
+		sleep(1);
 	}
 }
 
@@ -113,11 +96,7 @@ int		main(int argc, char **argv)
 {
 	t_ctx			*context;
 
-	if (argc < 2)
-	{
-		dprintf(STDERR, "ping: missing host operand\nTry 'ping -?' for more information.\n");
-			exit(64);
-	}
+	(void) argc;
 	context = get_context();
 	parse_args(argv + 1, &context->hostname);
 	resolve_host(context->hostname, &context->dest);

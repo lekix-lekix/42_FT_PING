@@ -26,16 +26,38 @@ void unrecognized_option(char *str)
     exit(64);
 }
 
-void invalid_value(char *str)
+// ping: missing host operand
+// Try 'ping --help' or 'ping --usage' for more information.
+
+void missing_host_operand(void)
 {
-    dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, str);
-    exit(EXIT_FAILURE);
+    dprintf(STDERR, "ping: missing host operand\n");
+    dprintf(STDERR, "Try 'ping -?' for more information.\n");
+    exit(64);
 }
+
 
 bool isnum(char c)
 {
     return (c >= '0' && c <= '9');
 }
+
+void invalid_value(char *str)
+{
+    char *err;
+
+    for (int i = 0; str[i]; i++)
+    {
+        if (str[i] && !isnum(str[i]))
+        {
+            err = str + i;
+            break;
+        }
+    }
+    dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, err);
+    exit(EXIT_FAILURE);
+}
+
 
 bool isallnum(char *str)
 {
@@ -47,25 +69,60 @@ bool isallnum(char *str)
     return true;
 }
 
-void register_ttl(char *str)
+long    convert_check_value(char *nb, long limit)
 {
-    t_ctx   *context = get_context();
-    char    *value_s = str + 5;
-    int     ttl_value = 0;
-
-    if (isallnum(value_s) == false)
-        invalid_value(value_s);
-    ttl_value = atoi(value_s);
-    if (ttl_value > 255)
+    long    value;
+    
+    if (isallnum(nb) == false)
+        invalid_value(nb);
+    value = atol(nb);
+    if (value > limit)
     {
-        dprintf(STDERR, "ping: option value too big: %d\n", ttl_value);
+        dprintf(STDERR, "ping: option value too big: %s\n", nb);
         exit(EXIT_FAILURE);
     }
+    else if (value <= 0)
+    {
+        dprintf(STDERR, "ping: option value too small: %s\n", nb);
+        exit(EXIT_FAILURE);
+    }
+    return (value);
+}
+
+void    register_ttl(char *opt)
+{
+    t_ctx   *context = get_context();
+    char    *value_s = opt + 5;
+    int     ttl_value = 0;
+
+    ttl_value = convert_check_value(value_s, UINT8_MAX);
     context->options.ttl = true;
     context->options.ttl_value = ttl_value;
 }
 
-void parse_option(char *opt)
+void register_timeout(char *opt, char *next_arg)
+{
+    t_ctx   *context = get_context();
+    char    *value_s = opt + 9;
+    long    timeout = 0;
+
+    if (opt[0] == '-')
+        timeout = convert_check_value(value_s, INT32_MAX);
+    else
+    {
+        if (!next_arg)
+        {
+            dprintf(STDERR, "ping: option requires an argument -- %s\n", opt);
+            exit(EXIT_FAILURE);
+        }
+        timeout = convert_check_value(next_arg, INT32_MAX);
+    }
+    context->options.timeout = true;
+    context->options.timeout_value = (int)timeout;
+    printf("timeout value = %d\n", context->options.timeout_value);
+}
+
+void parse_option(char *opt, char *next_arg)
 {
     t_ctx   *context = get_context();
     size_t  len = strlen(opt);
@@ -89,9 +146,9 @@ void parse_option(char *opt)
             register_ttl(opt);
             return ;
         }
-        else if (opt[0] == 'f' || strncmp(opt, "-flood", strlen(opt)) == 0)
+        else if (opt[0] == 'w' || strncmp(opt, "-timeout=", 9) == 0)
         {
-            context->options.flood = true;
+            register_timeout(opt, next_arg);
             return ;
         }
 		else
@@ -112,11 +169,17 @@ void parse_args(char **args, char **host)
 	for (int i = 0; args[i]; i++)
 	{
 		if (args[i][0] == '-' && strlen(args[i]) > 1)
-			parse_option(args[i]);
+        {
+			parse_option(args[i], args[i + 1]);
+            if (!(args[i][1] == '-')) // if option is type -opt and not --opt
+                i++;
+        }
 		else if (!host_set)
 		{
 			*host = args[i];
             host_set = true;
 		}
 	}
+    if (!host_set)
+        missing_host_operand();
 }

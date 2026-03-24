@@ -92,8 +92,6 @@ void	print_success_output(float *time_elapsed)
 {	
 	t_ctx	*context = get_context();
 
-	if (context->options.flood)
-		return ;
 	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
 		context->current_pkt.bytes_read - sizeof(iphdr),
 		context->source_dest_ip,
