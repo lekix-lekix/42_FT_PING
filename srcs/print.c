@@ -92,6 +92,8 @@ void	print_success_output(float *time_elapsed)
 {	
 	t_ctx	*context = get_context();
 
+	if (context->options.flood)
+		return ;
 	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n",
 		context->current_pkt.bytes_read - sizeof(iphdr),
 		context->source_dest_ip,
@@ -146,7 +148,6 @@ void	print_icmp(void)
 	icmphdr		 	*icmp_hdr = (icmphdr *)(get_context()->current_pkt.raw_content + ip_outer->ihl * 4);
 	iphdr			*sent_iphdr = (iphdr *)((char *)icmp_hdr + 8);
 	icmphdr			*sent_icmp = (icmphdr *)((char *)sent_iphdr + sent_iphdr->ihl * 4);
-
 
 	printf("ICMP: type %d, code %d, size %ld, id 0x%04x, seq 0x%04x\n",
 		sent_icmp->type,

@@ -12,8 +12,6 @@
 
 NAME = ft_ping
 
-# NAME_BONUS = ft_ping_bonus
-
 SRC = ./srcs/ft_ping.c \
 	./srcs/parsing.c \
 	./srcs/linked_list.c \
@@ -27,8 +25,6 @@ OBJ = $(SRC:.c=.o)
 OBJS = $(addprefix $(OBJS_DIR), $(OBJ))
 
 OBJS_DIR = .objs/
-
-# BONUS_OBJS = $(SRC_BONUS:.c=.o)
 
 CC = cc
 
@@ -45,10 +41,6 @@ $(OBJS_DIR)%.o: %.c
 $(NAME) : $(OBJS)
 	$(LINK)
 	sudo setcap cap_net_raw=ep ./$(NAME)
-
-valgrind :
-	$(CC) $(FLAGS) -o $(NAME) $(OBJS) -g3
-	sudo valgrind --leak-check=full --show-leak-kinds=all ./ft_ping $(ARGS)
 
 valgrind : $(OBJS)
 	$(LINK)
