@@ -12,37 +12,54 @@
 
 #include "../ft_ping.h"
 
-void invalid_option(char c)
+void    err_invalid_option(char c)
 {
     dprintf(STDERR, "ping: invalid option -- '%c'\n", c);
-    dprintf(STDERR, "Try 'ping -?' for more information.\n");
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
     exit(64);
 }
 
-void unrecognized_option(char *str)
+void    err_unrecognized_option(char *str)
 {
-    dprintf(STDERR, "ping: unrecognized option -- '%s'\n", str);
-    dprintf(STDERR, "Try 'ping -?' for more information.\n");
+    dprintf(STDERR, "ping: unrecognized option '%s'\n", str);
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
     exit(64);
 }
 
-// ping: missing host operand
-// Try 'ping --help' or 'ping --usage' for more information.
-
-void missing_host_operand(void)
+void    err_missing_host_operand(void)
 {
     dprintf(STDERR, "ping: missing host operand\n");
-    dprintf(STDERR, "Try 'ping -?' for more information.\n");
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
     exit(64);
 }
 
+void    err_requires_argument(char *option)
+{
+    dprintf(STDERR, "ping: option '%s' requires an argument\n", option);
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
+    exit(64);
+}
 
-bool isnum(char c)
+void    err_forbid_argument(char *option)
+{
+    dprintf(STDERR, "ping: option '%s' doesn't allow an argument\n", option);
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
+    exit(64);
+}
+
+void    err_missing_host(void)
+{
+    dprintf(STDERR, "ping: missing host operand\n");
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
+    exit(64);
+}
+
+bool    isnum(char c)
 {
     return (c >= '0' && c <= '9');
 }
 
-void invalid_value(char *str)
+void    invalid_value(char *str)
 {
     char *err;
 
@@ -59,7 +76,7 @@ void invalid_value(char *str)
 }
 
 
-bool isallnum(char *str)
+bool    isallnum(char *str)
 {
     for (int i = 0; str[i]; i++)
     {
@@ -89,130 +106,68 @@ long    convert_check_value(char *nb, long limit)
     return (value);
 }
 
-void    register_ttl(char *opt)
+int    register_ttl(char *value)
 {
     t_ctx   *context = get_context();
-    char    *value_s = opt + 5;
     int     ttl_value = 0;
 
-    ttl_value = convert_check_value(value_s, UINT8_MAX);
+    ttl_value = convert_check_value(value, UINT8_MAX);
     context->options.ttl = true;
     context->options.ttl_value = ttl_value;
+    return (0);
 }
 
-void register_timeout(char *opt, char *next_arg)
+int    register_timeout(char *next_arg)
 {
-    t_ctx   *context = get_context();
-    char    *value_s = opt + 9;
-    long    timeout = 0;
-
-    if (opt[0] == '-')
-        timeout = convert_check_value(value_s, INT32_MAX);
-    else
-    {
-        if (!next_arg)
-        {
-            dprintf(STDERR, "ping: option requires an argument -- %s\n", opt);
-            exit(EXIT_FAILURE);
-        }
-        timeout = convert_check_value(next_arg, INT32_MAX);
-    }
-    context->options.timeout = true;
-    context->options.timeout_value = (int)timeout;
-    printf("timeout value = %d\n", context->options.timeout_value);
+    (void) next_arg;
+    // t_ctx   *context = get_context();
+    // char    *value_s = opt + 9;
+    // long    timeout = 0;
+// 
+    // if (opt[0] == '-')
+        // timeout = convert_check_value(value_s, INT32_MAX);
+    // else
+    // {
+        // if (!next_arg)
+        // {
+            // dprintf(STDERR, "ping: option requires an argument -- %s\n", opt);
+            // exit(EXIT_FAILURE);
+        // }
+        // timeout = convert_check_value(next_arg, INT32_MAX);
+    // }
+    // context->options.timeout = true;
+    // context->options.timeout_value = (int)timeout;
+    // printf("timeout value = %d\n", context->options.timeout_value);
+    return (0);
 }
 
-void parse_option(char *opt, char *next_arg)
-{
-    t_ctx   *context = get_context();
-    size_t  len = strlen(opt);
-
-    opt += 1;
-	for (size_t i = 0; i < len; i++)
-	{
-		if (opt[0] == '-' && strlen(opt) == 1)
-			return ;
-		if (opt[0] == '?')
-			print_help();
-		else if (opt[0] == 'V')
-			print_version();
-        else if (opt[0] == 'v' || strncmp(opt, "-verbose", strlen(opt)) == 0)
-        {
-            context->options.verbose = true;
-            return ;
-        }
-        else if (strncmp(opt, "-ttl=", 5) == 0)
-        {
-            register_ttl(opt);
-            return ;
-        }
-        else if (opt[0] == 'w' || strncmp(opt, "-timeout=", 9) == 0)
-        {
-            register_timeout(opt, next_arg);
-            return ;
-        }
-		else
-        {
-            if (opt[0] == '-')
-                unrecognized_option(opt);
-            else
-			    invalid_option(opt[0]);
-            return ;
-        }
-	}
-}
-
-// void parse_args(char **args, char **host)
-// {
-//     bool host_set = false;
-    
-// 	for (int i = 0; args[i]; i++)
-// 	{
-// 		if (args[i][0] == '-' && strlen(args[i]) > 1)
-//         {
-// 			parse_option(args[i], args[i + 1]);
-//             if (!(args[i][1] == '-')) // if option is type -opt and not --opt
-//                 i++;
-//         }
-// 		else if (!host_set)
-// 		{
-// 			*host = args[i];
-//             host_set = true;
-// 		}
-// 	}
-//     if (!host_set)
-//         missing_host_operand();
-// }
-
-void print_arg_lst(t_lst **args)
+void    print_arg_lst(t_lst **args)
 {
     for (t_lst *curr = *args; curr; curr = curr->next)
     {
-        t_arg *arg = (t_arg *)curr->content;
-        printf("arg = %s\n", arg->arg);
+        printf("arg = %s\n", (char*)curr->content);
     }
 }
 
-void create_arg_lst(char **args, t_lst **args_lst)
+void    create_arg_lst(char **args, t_lst **args_lst)
 {
     t_lst   *new_node = NULL;
-    t_arg   *new_arg = NULL;
 
     for (int i = 0; args[i]; i++)
     {
-        new_arg = malloc(sizeof(t_arg));
+        // new_arg = malloc(sizeof(t_arg));
         new_node = malloc(sizeof(t_lst));
-        if (!new_arg || !new_node)
+        if (!new_node)
             exit_error(); // add clear list
-        new_arg->arg = args[i];
-        new_arg->value = NULL;
-        new_node->content = (void *)new_arg;
+        new_node->content = (void *)strdup(args[i]);
+        if (!new_node->content)
+            exit_error();
         new_node->next = NULL;
         ft_lstadd_back(args_lst, new_node);
     }
 }
 
-bool is_valid_opt_char(char c)
+bool    is_valid_opt_char(char c)
 {
     char valid[] = "ipvVwW";
 
@@ -224,48 +179,222 @@ bool is_valid_opt_char(char c)
     return (false);
 }
 
-bool is_valid_opt_str(char *str)
+bool    is_valid_opt_str(char *str)
 {
-    char *valid[] = {"interval", "pattern", "wait", "ttl"};
+    char *valid[] = {"interval", "interval=",
+        "pattern", "pattern=", 
+        "wait", "wait=", 
+        "ttl", "ttl=", 
+        "timeout", "timeout=",
+        "verbose", "version", "help", NULL};         // verbose= : "doesnt allow an argument"
+
+    str += 2;
+    for (int i = 0; valid[i]; i++)
+    {
+        if (strncmp(valid[i], str, strlen(str)) == 0)
+            return (true);
+    }
+    return (false);
 }
 
-bool check_option(char *arg)
+int     register_interval(char *value)
 {
-    bool double_dash = false;
-    bool single_dash = false;
-
-    if (arg[0] == '-' && arg[1] == '-')
-        double_dash = true;
-    if (arg[0])
+    printf("registering interval with value = %s\n", value);
+    return (0);
 }
 
-bool is_an_opt(char *arg)
+int     register_pattern(char *value)
+{
+    printf("registering pattern with value = %s\n", value);
+    return (0);
+}
+
+int     register_wait(char *value)
+{
+    printf("registering wait with value = %s\n", value);
+    return (0);
+}
+
+int     register_verbose(char *value)
+{
+    printf("registering v with value = %s\n", value);
+    return (0);
+}
+
+bool    option_needs_arg(char *opt)
+{
+    if (strncmp(opt, "verbose", strlen(opt)) == 0 || strncmp(opt, "help", strlen(opt)) == 0
+        || strncmp(opt, "version", strlen(opt)) == 0)
+        return (false);
+    return (true);
+}
+
+bool    option_needs_arg_char(char opt)
+{
+    if (opt == 'V' || opt == 'v' || opt == '?')
+        return (false);
+    return (true);
+}
+
+
+int     register_option(char *opt, char *value)
+{
+    opt += 2;
+
+    if (strncmp(opt, "help", 4) == 0)
+        return (print_help());
+    if (strncmp(opt, "interval", 8) == 0)
+        return (register_interval(value));
+    if (strncmp(opt, "pattern", 7) == 0)
+        return (register_pattern(value));
+    if (strncmp(opt, "wait", 4) == 0)
+        return (register_wait(value));
+    if (strncmp(opt, "ttl", 3) == 0)
+        return (register_ttl(value));
+    if (strncmp(opt, "timeout", 7) == 0)
+        return (register_timeout(value));
+    if (strncmp(opt, "verbose", 7) == 0)
+        return (register_verbose(value));
+    return (0);
+}
+
+int     register_option_char(char opt, char *value)
+{
+    switch (opt)
+    {
+        case '?':
+            return (print_help());
+            break;
+
+        case 'i':
+            return (register_interval(value));
+            break;
+            
+        case 'p':
+            return (register_pattern(value));
+            break;
+
+        case 'v':
+            return (register_verbose(value));
+
+        case 'w':
+            return (register_timeout(value));
+            break;
+
+        case 'W':
+            return (register_wait(value));
+            break;
+    
+        default:
+            break;
+    }
+    return (0);
+}
+
+int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
+{
+    char *eq = strstr(opt, "=");
+    if (eq)
+    {        
+        char *value = eq + 1;
+        *eq = 0;
+        if (option_needs_arg(opt))
+            err_forbid_argument(opt);
+        if (!is_valid_opt_str(opt))
+            err_unrecognized_option(opt);
+        register_option(opt, value);
+        return (true);
+    }
+    else
+    {
+        if (option_needs_arg(opt))
+        {
+            if (!curr->next)
+                err_requires_argument(opt);
+            register_option(opt, curr->next->content);
+            ft_lstdelone(args_lst, curr->next, free);
+            curr->next = NULL;
+        }
+        return (true);
+    }
+}
+
+int     s_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
+{
+    opt += 1;
+
+    for (int i = 0; opt[i]; i++)
+    {
+        if (!is_valid_opt_char(opt[i]))
+            err_invalid_option(opt[i]);
+        if (!option_needs_arg_char(opt[i]))
+            register_option_char(opt[i], NULL);
+        else if (opt[i + 1])
+        {
+            register_option_char(opt[i], opt + (i + 1));
+            break ;
+        }
+        else
+        {
+            if (!curr->next)
+                err_requires_argument(opt);
+            register_option_char(opt[i], curr->next->content);
+            ft_lstdelone(args_lst, curr->next, free);
+            curr->next = NULL;
+        }
+    }
+    return (0);
+}
+
+bool    check_option(t_lst **args_lst, t_lst *curr)
+{
+    char   *opt = (char *)curr->content;
+
+    if (opt[0] == '-' && opt[1] == '-')
+        d_dashed_option(opt, curr, args_lst);
+    else if (opt[0] == '-')
+        s_dashed_option(opt, curr, args_lst);
+    return (true);
+}
+
+bool    is_an_opt(char *arg)
 {
     return (arg[0] == '-');
 }
 
-void check_all_opt(t_lst **args_lst)
+void    check_all_opt(t_lst **args_lst)
 {
-    // bool need_value;
-
-    for (t_lst *curr; curr; curr = curr->next)
+    for (t_lst *curr = *args_lst; curr; curr = curr->next)
     {
-        t_arg *curr = (t_arg *)curr->arg;
-        if (is_an_opt(curr->arg))
+        if (is_an_opt((char *)curr->content))
         {
-            check_option(curr);
-
+            check_option(args_lst, curr);
             ft_lstdelone(args_lst, curr, free);
+            curr = *args_lst;
+            if (!curr)
+                break;
         }
     }
 }
 
-void parse_args(char **args, char **host)
+void    parse_args(char **args)
 {
-    t_lst  *args_lst = NULL;
+    t_ctx   *context = get_context();
+    t_lst   *args_lst = NULL;
 
-    (void) host;
     create_arg_lst(args, &args_lst);
     print_arg_lst(&args_lst);
-    check_all_args(&args_lst);
+    check_all_opt(&args_lst);
+    if (args_lst)
+    {
+        context->hostname = strdup((char *)args_lst->content);
+        if (!context->hostname)
+            exit_error();
+        ft_lstclear(&args_lst, free);
+    }
+    else
+    {
+        ft_lstclear(&args_lst, free);
+        err_missing_host_operand();
+    }
 }

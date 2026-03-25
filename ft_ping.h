@@ -34,10 +34,10 @@
 #include <math.h>
 #include <time.h>
 
-typedef struct sockaddr_in sockaddr_in;
-typedef struct addrinfo addrinfo;
-typedef struct iphdr iphdr;
-typedef struct icmphdr icmphdr;
+typedef struct sockaddr_in  sockaddr_in;
+typedef struct addrinfo     addrinfo;
+typedef struct iphdr        iphdr;
+typedef struct icmphdr      icmphdr;
 
 typedef struct s_lst
 {
@@ -59,12 +59,6 @@ typedef struct s_opt
     int                 ttl_value;
     int                 timeout_value;
 } t_opt;
-
-typedef struct t_arg
-{
-    char                *arg;
-    char                *value;
-} t_arg;
 
 typedef struct t_pkt
 {
@@ -91,7 +85,7 @@ typedef struct s_ctx
     int                 seq;
 } t_ctx;
 
-void    parse_args(char **args, char **host);
+void    parse_args(char **args);
 void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
 t_ctx	*get_context(void);
 void	exit_error(void);
@@ -118,7 +112,7 @@ int		receive_packet(void);
 float	get_time_elapsed(struct timeval *starting_time);
 
 // PRINT
-void    print_help(void);
+int     print_help(void);
 void    print_version(void);
 void	print_success_output(float *time_elapsed);
 void	print_error_output(void);

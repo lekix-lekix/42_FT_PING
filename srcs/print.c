@@ -12,7 +12,7 @@
 
 #include "../ft_ping.h"
 
-void print_help(void)
+int	print_help(void)
 {
     printf("%s\n", "Usage: ping [OPTION...] HOST ...");
     printf("%s\n", "Send ICMP ECHO_REQUEST packets to network hosts.");
@@ -25,6 +25,7 @@ void print_help(void)
     printf("%s\n", "");
     printf("%s\n", "Report bugs to <do_not_report_bugs_please@42.fr>.");
     exit(EXIT_SUCCESS);
+	return (0);
 }
 
 void print_version(void)

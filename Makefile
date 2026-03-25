@@ -28,9 +28,9 @@ OBJS_DIR = .objs/
 
 CC = cc
 
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -g
 
-LINK = $(CC) $(FLAGS) -o $(NAME) $(OBJS) -lm -g3
+LINK = $(CC) $(FLAGS) -o $(NAME) $(OBJS) -lm
 
 all : $(NAME)
 
@@ -44,7 +44,7 @@ $(NAME) : $(OBJS)
 
 valgrind : $(OBJS)
 	$(LINK)
-	sudo valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes ./ft_ping $(ARGS)
+	sudo valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes --track-origins=yes ./ft_ping $(ARGS)
 
 clean :
 	rm -rf $(OBJS_DIR)

@@ -51,6 +51,8 @@ void	sigint_handler(int code)
 		ft_lstclear(&context->times, free);
 	}
 	freeaddrinfo(context->dest);
+	if (context->hostname)
+		free(context->hostname);
 	close(context->socket);
 	exit(0);
 }
@@ -98,7 +100,7 @@ int		main(int argc, char **argv)
 
 	(void) argc;
 	context = get_context();
-	parse_args(argv + 1, &context->hostname);
+	parse_args(argv + 1);
 	resolve_host(context->hostname, &context->dest);
 	setup_socket(&context->socket, context->dest);
 	setup_signal();

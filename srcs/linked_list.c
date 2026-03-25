@@ -42,23 +42,34 @@ void	ft_lstadd_back(t_lst **lst, t_lst *new)
 		list->next = new;
 }
 
-void	ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *))
+void ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *))
 {
-	t_lst *prev = NULL;
-	
-	if (!lst || !del)
-		return ;
-	for (t_lst *curr = *lst; curr; curr = curr->next)
-	{
-		if (curr == to_del)
-		{
-			prev->next = curr->next;
-			del(curr->content);
-			del(curr);
-			return ;
-		}
-		prev = curr;
-	}
+    t_lst *prev = NULL;
+    t_lst *curr;
+
+    if (!lst || !*lst || !to_del || !del)
+        return;
+
+    curr = *lst;
+    if (curr == to_del)
+    {
+        *lst = curr->next;
+        del(curr->content);
+        free(curr);
+        return;
+    }
+    while (curr)
+    {
+        if (curr == to_del)
+        {
+            prev->next = curr->next;
+            del(curr->content);
+            free(curr);
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
 }
 
 void	ft_lstclear(t_lst **lst, void (*del)(void *))
