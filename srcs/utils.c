@@ -16,7 +16,9 @@ void	exit_error(void)
 {
 	t_ctx *context = get_context();
 
-	freeaddrinfo(context->dest);
+	if (context->dest)
+		freeaddrinfo(context->dest);
+	
 	close(context->socket);
 	ft_lstclear(&context->times, free);
 	exit(EXIT_FAILURE);
@@ -37,8 +39,11 @@ t_ctx	*get_context(void)
 	if (!init)
 	{
 		context.hostname = NULL;
+		context.dest = NULL;
+		context.times = NULL;
 		context.times = NULL;
 		context.seq = 0;
+		context.socket = -1;
 		context.id = getpid();
 		memset(context.source_dest_ip, 0, INET_ADDRSTRLEN);
 		init = true;

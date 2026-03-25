@@ -11,10 +11,10 @@
 /* ************************************************************************** */
 
 // BONUSES
-// --ttl
-// -W --wait for N seconds for response	(INT_MAX)
-// -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first chars taken, in hex
 // -i --interval=NUMBER interval (LONG INT MAX)
+// -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first 2 chars taken, in hex
+// -W --wait for N seconds for response	(INT_MAX)
+// --ttl
 // -w --timeout=N (MAX_INT) stop after N seconds 
 
 // vagrant@debian12:~/ft_ping$ ping -p --ttl=1  1.1.1.1

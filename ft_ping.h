@@ -60,6 +60,12 @@ typedef struct s_opt
     int                 timeout_value;
 } t_opt;
 
+typedef struct t_arg
+{
+    char                *arg;
+    char                *value;
+} t_arg;
+
 typedef struct t_pkt
 {
     int                 bytes_read;
@@ -94,6 +100,7 @@ void	exit_error(void);
 t_lst	*ft_lstnew(void *content);
 void	ft_lstadd_back(t_lst **lst, t_lst *new);
 void	ft_lstclear(t_lst **lst, void (*del)(void *));
+void	ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *));
 float   calculate_avg(t_lst **lst);
 float	get_min(t_lst **lst);
 float	get_max(t_lst **lst);

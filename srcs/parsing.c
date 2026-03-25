@@ -162,24 +162,110 @@ void parse_option(char *opt, char *next_arg)
 	}
 }
 
+// void parse_args(char **args, char **host)
+// {
+//     bool host_set = false;
+    
+// 	for (int i = 0; args[i]; i++)
+// 	{
+// 		if (args[i][0] == '-' && strlen(args[i]) > 1)
+//         {
+// 			parse_option(args[i], args[i + 1]);
+//             if (!(args[i][1] == '-')) // if option is type -opt and not --opt
+//                 i++;
+//         }
+// 		else if (!host_set)
+// 		{
+// 			*host = args[i];
+//             host_set = true;
+// 		}
+// 	}
+//     if (!host_set)
+//         missing_host_operand();
+// }
+
+void print_arg_lst(t_lst **args)
+{
+    for (t_lst *curr = *args; curr; curr = curr->next)
+    {
+        t_arg *arg = (t_arg *)curr->content;
+        printf("arg = %s\n", arg->arg);
+    }
+}
+
+void create_arg_lst(char **args, t_lst **args_lst)
+{
+    t_lst   *new_node = NULL;
+    t_arg   *new_arg = NULL;
+
+    for (int i = 0; args[i]; i++)
+    {
+        new_arg = malloc(sizeof(t_arg));
+        new_node = malloc(sizeof(t_lst));
+        if (!new_arg || !new_node)
+            exit_error(); // add clear list
+        new_arg->arg = args[i];
+        new_arg->value = NULL;
+        new_node->content = (void *)new_arg;
+        new_node->next = NULL;
+        ft_lstadd_back(args_lst, new_node);
+    }
+}
+
+bool is_valid_opt_char(char c)
+{
+    char valid[] = "ipvVwW";
+
+    for (int i = 0; valid[i]; i++)
+    {
+        if (c == valid[i])
+            return (true);
+    }
+    return (false);
+}
+
+bool is_valid_opt_str(char *str)
+{
+    char *valid[] = {"interval", "pattern", "wait", "ttl"};
+}
+
+bool check_option(char *arg)
+{
+    bool double_dash = false;
+    bool single_dash = false;
+
+    if (arg[0] == '-' && arg[1] == '-')
+        double_dash = true;
+    if (arg[0])
+}
+
+bool is_an_opt(char *arg)
+{
+    return (arg[0] == '-');
+}
+
+void check_all_opt(t_lst **args_lst)
+{
+    // bool need_value;
+
+    for (t_lst *curr; curr; curr = curr->next)
+    {
+        t_arg *curr = (t_arg *)curr->arg;
+        if (is_an_opt(curr->arg))
+        {
+            check_option(curr);
+
+            ft_lstdelone(args_lst, curr, free);
+        }
+    }
+}
+
 void parse_args(char **args, char **host)
 {
-    bool host_set = false;
-    
-	for (int i = 0; args[i]; i++)
-	{
-		if (args[i][0] == '-' && strlen(args[i]) > 1)
-        {
-			parse_option(args[i], args[i + 1]);
-            if (!(args[i][1] == '-')) // if option is type -opt and not --opt
-                i++;
-        }
-		else if (!host_set)
-		{
-			*host = args[i];
-            host_set = true;
-		}
-	}
-    if (!host_set)
-        missing_host_operand();
+    t_lst  *args_lst = NULL;
+
+    (void) host;
+    create_arg_lst(args, &args_lst);
+    print_arg_lst(&args_lst);
+    check_all_args(&args_lst);
 }
