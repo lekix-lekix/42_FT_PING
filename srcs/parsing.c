@@ -19,6 +19,13 @@ void    err_invalid_option(char c)
     exit(64);
 }
 
+void    err_invalid_value(char *arg, char *err)
+{
+    dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", arg, err);
+    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
+    exit(64); 
+}
+
 void    err_unrecognized_option(char *str)
 {
     dprintf(STDERR, "ping: unrecognized option '%s'\n", str);
@@ -52,6 +59,12 @@ void    err_missing_host(void)
     dprintf(STDERR, "ping: missing host operand\n");
     dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
     exit(64);
+}
+
+void    err_value_too_small(char *value)
+{
+    dprintf(STDERR, "ping: value too small: %s\n", value);
+    exit(1);   
 }
 
 bool    isnum(char c)
@@ -169,7 +182,7 @@ void    create_arg_lst(char **args, t_lst **args_lst)
 
 bool    is_valid_opt_char(char c)
 {
-    char valid[] = "ipvVwW";
+    char valid[] = "ipvVwW?";
 
     for (int i = 0; valid[i]; i++)
     {
@@ -199,13 +212,27 @@ bool    is_valid_opt_str(char *str)
 
 int     register_interval(char *value)
 {
-    printf("registering interval with value = %s\n", value);
+    t_ctx   *context = get_context();
+    char    *error = NULL;
+
+    float  val = strtof(value, &error);
+    if (*error)
+        err_invalid_value(value, error);
+    if (val > 99999.0f || val < 0.1f)
+        err_value_too_small(value);
+    printf("value = %f\n", val);
+    float decimal = modff(val, &val);
+    printf("int = %f decimal = %f\n", val, decimal);
+    context->options.interval = true;
+    // context->options.interval_value = val;
+    printf("registered interval, value = %f\n", val);
     return (0);
 }
 
 int     register_pattern(char *value)
 {
-    printf("registering pattern with value = %s\n", value);
+    (void) value;
+    // t_ctx   *context = get_context
     return (0);
 }
 
@@ -215,9 +242,11 @@ int     register_wait(char *value)
     return (0);
 }
 
-int     register_verbose(char *value)
+int     register_verbose(void)
 {
-    printf("registering v with value = %s\n", value);
+    t_ctx   *context = get_context();
+
+    context->options.verbose = true;
     return (0);
 }
 
@@ -236,7 +265,6 @@ bool    option_needs_arg_char(char opt)
     return (true);
 }
 
-
 int     register_option(char *opt, char *value)
 {
     opt += 2;
@@ -254,12 +282,13 @@ int     register_option(char *opt, char *value)
     if (strncmp(opt, "timeout", 7) == 0)
         return (register_timeout(value));
     if (strncmp(opt, "verbose", 7) == 0)
-        return (register_verbose(value));
+        return (register_verbose());
     return (0);
 }
 
 int     register_option_char(char opt, char *value)
 {
+    printf("opt c = %c\n", opt);
     switch (opt)
     {
         case '?':
@@ -275,7 +304,7 @@ int     register_option_char(char opt, char *value)
             break;
 
         case 'v':
-            return (register_verbose(value));
+            return (register_verbose());
 
         case 'w':
             return (register_timeout(value));
@@ -323,6 +352,7 @@ int     s_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
 {
     opt += 1;
 
+    printf("sdash\n");
     for (int i = 0; opt[i]; i++)
     {
         if (!is_valid_opt_char(opt[i]))

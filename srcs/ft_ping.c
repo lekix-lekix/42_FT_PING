@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 // BONUSES
-// -i --interval=NUMBER interval (LONG INT MAX)
+// -i --interval=NUMBER interval (LONG INT MAX) Float
 // -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first 2 chars taken, in hex
 // -W --wait for N seconds for response	(INT_MAX)
 // --ttl
@@ -66,14 +66,29 @@ void	setup_signal(void)
 	sigaction(SIGINT, &act, NULL);
 }
 
+
+// int 	get_sleep_value(void)
+// {
+// 	t_ctx	*context = get_context();
+
+// 	if (context->options.interval)
+// 		return (1);
+// 	else
+// 	{
+// 		struct timeval tv;
+// 		tv.
+// 	}
+// }
+
 void	ping_loop(t_ctx *context)
 {
 	t_icmpping		ping_packet;
 	struct timeval  start;
 	float			time_elapsed;
+	// int				interval;
 
 	print_begin_output(&ping_packet);
-
+	// interval = get_sleep_value();
 	while (1)
 	{
 		gettimeofday(&start, NULL);

@@ -38,6 +38,7 @@ typedef struct sockaddr_in  sockaddr_in;
 typedef struct addrinfo     addrinfo;
 typedef struct iphdr        iphdr;
 typedef struct icmphdr      icmphdr;
+typedef struct timeval      timeval;
 
 typedef struct s_lst
 {
@@ -53,9 +54,11 @@ typedef struct s_icmpping
 
 typedef struct s_opt
 {
-    bool                verbose;
+    bool                interval;
     bool                ttl;
     bool                timeout;
+    bool                verbose;
+    timeval             interval_value;
     int                 ttl_value;
     int                 timeout_value;
 } t_opt;
