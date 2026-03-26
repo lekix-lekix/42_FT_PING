@@ -12,61 +12,6 @@
 
 #include "../ft_ping.h"
 
-void    err_invalid_option(char c)
-{
-    dprintf(STDERR, "ping: invalid option -- '%c'\n", c);
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_invalid_value(char *arg, char *err)
-{
-    dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", arg, err);
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64); 
-}
-
-void    err_unrecognized_option(char *str)
-{
-    dprintf(STDERR, "ping: unrecognized option '%s'\n", str);
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_missing_host_operand(void)
-{
-    dprintf(STDERR, "ping: missing host operand\n");
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_requires_argument(char *option)
-{
-    dprintf(STDERR, "ping: option '%s' requires an argument\n", option);
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_forbid_argument(char *option)
-{
-    dprintf(STDERR, "ping: option '%s' doesn't allow an argument\n", option);
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_missing_host(void)
-{
-    dprintf(STDERR, "ping: missing host operand\n");
-    dprintf(STDERR, "Try 'ping -?' or 'ping --help' for more information.\n");
-    exit(64);
-}
-
-void    err_value_too_small(char *value)
-{
-    dprintf(STDERR, "ping: value too small: %s\n", value);
-    exit(1);   
-}
-
 bool    isnum(char c)
 {
     return (c >= '0' && c <= '9');
@@ -130,30 +75,6 @@ int    register_ttl(char *value)
     return (0);
 }
 
-int    register_timeout(char *next_arg)
-{
-    (void) next_arg;
-    // t_ctx   *context = get_context();
-    // char    *value_s = opt + 9;
-    // long    timeout = 0;
-// 
-    // if (opt[0] == '-')
-        // timeout = convert_check_value(value_s, INT32_MAX);
-    // else
-    // {
-        // if (!next_arg)
-        // {
-            // dprintf(STDERR, "ping: option requires an argument -- %s\n", opt);
-            // exit(EXIT_FAILURE);
-        // }
-        // timeout = convert_check_value(next_arg, INT32_MAX);
-    // }
-    // context->options.timeout = true;
-    // context->options.timeout_value = (int)timeout;
-    // printf("timeout value = %d\n", context->options.timeout_value);
-    return (0);
-}
-
 void    print_arg_lst(t_lst **args)
 {
     for (t_lst *curr = *args; curr; curr = curr->next)
@@ -168,7 +89,6 @@ void    create_arg_lst(char **args, t_lst **args_lst)
 
     for (int i = 0; args[i]; i++)
     {
-        // new_arg = malloc(sizeof(t_arg));
         new_node = malloc(sizeof(t_lst));
         if (!new_node)
             exit_error(); // add clear list
@@ -220,25 +140,83 @@ int     register_interval(char *value)
         err_invalid_value(value, error);
     if (val > 99999.0f || val < 0.1f)
         err_value_too_small(value);
-    printf("value = %f\n", val);
     float decimal = modff(val, &val);
-    printf("int = %f decimal = %f\n", val, decimal);
     context->options.interval = true;
-    // context->options.interval_value = val;
-    printf("registered interval, value = %f\n", val);
+    context->options.interval_value.tv_sec = val;
+    context->options.interval_value.tv_usec = decimal;
     return (0);
 }
 
-int     register_pattern(char *value)
+int    register_timeout(char *value)
 {
-    (void) value;
-    // t_ctx   *context = get_context
+    t_ctx   *context = get_context();
+    char    *error = NULL;
+    long    timeout = strtol(value, &error, 10);
+
+    if (*error)
+        err_invalid_value(value, error);
+    if (timeout > INT32_MAX)
+        err_value_too_big(value);
+    if (timeout <= 0)
+        err_value_too_small(value);
+    context->options.timeout = true;
+    context->options.timeout_value = (int)timeout;
     return (0);
 }
 
 int     register_wait(char *value)
 {
-    printf("registering wait with value = %s\n", value);
+    t_ctx   *context = get_context();
+    char    *error = NULL;
+    long    wait = strtol(value, &error, 10);
+
+    if (*error)
+        err_invalid_value(value, error);
+    if (wait > INT32_MAX)
+        err_value_too_big(value);
+    if (wait <= 0)
+        err_value_too_small(value);
+    context->options.wait = true;
+    context->options.wait_value = (int)wait;
+    return (0);
+}
+
+bool    ishex(char c)
+{
+    char hex[] = "0123456789abcdef";
+
+    for (int i = 0; hex[i]; i++)
+    {
+        if (hex[i] == c)
+            return (true);
+    }
+    return (false);
+}
+
+bool    isallhex(char *str, char **err)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (!ishex(str[i]))
+        {
+            *err = str + i;
+            return (false);
+        }
+    }
+    return (true);
+}
+
+int     register_pattern(char *value)
+{
+    t_ctx   *context = get_context();
+    char    *err = NULL;
+
+    if (!isallhex(value, &err))
+        err_pattern(err);
+    context->options.pattern = true;
+    context->options.pattern_value = strdup(value);
+    if (!context->options.pattern_value)
+        exit_error();
     return (0);
 }
 
@@ -352,7 +330,6 @@ int     s_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
 {
     opt += 1;
 
-    printf("sdash\n");
     for (int i = 0; opt[i]; i++)
     {
         if (!is_valid_opt_char(opt[i]))
@@ -370,7 +347,6 @@ int     s_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
                 err_requires_argument(opt);
             register_option_char(opt[i], curr->next->content);
             ft_lstdelone(args_lst, curr->next, free);
-            curr->next = NULL;
         }
     }
     return (0);
@@ -401,6 +377,8 @@ void    check_all_opt(t_lst **args_lst)
             check_option(args_lst, curr);
             ft_lstdelone(args_lst, curr, free);
             curr = *args_lst;
+            print_arg_lst(args_lst);
+            printf("=====\n");
             if (!curr)
                 break;
         }
@@ -415,6 +393,7 @@ void    parse_args(char **args)
     create_arg_lst(args, &args_lst);
     print_arg_lst(&args_lst);
     check_all_opt(&args_lst);
+    print_arg_lst(&args_lst);
     if (args_lst)
     {
         context->hostname = strdup((char *)args_lst->content);

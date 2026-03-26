@@ -26,9 +26,17 @@ void	exit_error(void)
 
 void	init_options(t_opt *options)
 {
-	options->verbose = false;
+	options->interval = false;
+	options->pattern = false;
+	options->timeout = false;
 	options->ttl = false;
+	options->verbose = false;
+	options->wait = false;
+
+	options->pattern_value = NULL;
 	options->ttl_value = -1;
+	options->timeout_value = -1;
+	options->wait_value = -1;
 }
 
 t_ctx	*get_context(void)

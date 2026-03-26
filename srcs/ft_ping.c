@@ -53,6 +53,8 @@ void	sigint_handler(int code)
 	freeaddrinfo(context->dest);
 	if (context->hostname)
 		free(context->hostname);
+	if (context->options.pattern_value)
+		free(context->options.pattern_value);
 	close(context->socket);
 	exit(0);
 }
@@ -64,31 +66,18 @@ void	setup_signal(void)
 	bzero(&act, sizeof(act));
 	act.sa_handler = &sigint_handler;
 	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGALRM, &act, NULL);
 }
-
-
-// int 	get_sleep_value(void)
-// {
-// 	t_ctx	*context = get_context();
-
-// 	if (context->options.interval)
-// 		return (1);
-// 	else
-// 	{
-// 		struct timeval tv;
-// 		tv.
-// 	}
-// }
 
 void	ping_loop(t_ctx *context)
 {
 	t_icmpping		ping_packet;
 	struct timeval  start;
 	float			time_elapsed;
-	// int				interval;
 
 	print_begin_output(&ping_packet);
-	// interval = get_sleep_value();
+	if (context->options.timeout)
+		alarm(context->options.timeout_value);
 	while (1)
 	{
 		gettimeofday(&start, NULL);
@@ -105,7 +94,14 @@ void	ping_loop(t_ctx *context)
 		}
 		else
 			print_error_output();
-		sleep(1);
+		if (context->options.interval)
+		{
+			sleep(context->options.interval_value.tv_sec);
+			usleep(context->options.interval_value.tv_usec);
+		}
+		else
+			sleep(1);
+		time_elapsed = get_time_elapsed(&start);
 	}
 }
 

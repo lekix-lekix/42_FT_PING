@@ -55,12 +55,17 @@ typedef struct s_icmpping
 typedef struct s_opt
 {
     bool                interval;
-    bool                ttl;
+    bool                pattern;
     bool                timeout;
+    bool                ttl;
     bool                verbose;
+    bool                wait;
+    char                *pattern_value;
     timeval             interval_value;
     int                 ttl_value;
     int                 timeout_value;
+    int                 wait_value;
+
 } t_opt;
 
 typedef struct t_pkt
@@ -107,7 +112,6 @@ void	store_time(t_ctx *context, float time);
 // UTILS
 void	exit_error(void);
 
-
 // PACKET HANDLING
 void	prep_ping_packet(t_icmpping *ping_packet);
 void	send_packet(t_icmpping *ping);
@@ -124,5 +128,17 @@ void	print_begin_output(t_icmpping *ping_packet);
 // NETWORK
 void	resolve_host(char *host, struct addrinfo **dest);
 void	setup_socket(int *sock, struct addrinfo *res_list);
+
+// ERRORS
+void    err_invalid_option(char c);
+void    err_invalid_value(char *arg, char *err);
+void    err_unrecognized_option(char *str);
+void    err_missing_host_operand(void);
+void    err_requires_argument(char *option);
+void    err_forbid_argument(char *option);
+void    err_missing_host(void);
+void    err_value_too_small(char *value);
+void    err_pattern(char *value);
+void    err_value_too_big(char *value);
 
 #endif

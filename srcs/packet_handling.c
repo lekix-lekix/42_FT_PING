@@ -92,6 +92,42 @@ void	send_packet(t_icmpping *ping)
 	}
 }
 
+int		hex_to_int_char(char c)
+{
+	char	hex[] = "0123456789abcdef";
+
+	for (int i = 0; hex[i]; i++)
+	{
+		if (hex[i] == c)
+			return (i);
+	}
+	return (-1);
+}
+
+int		hex_to_int(char *nb)
+{
+	int		res = 0;
+
+	for (int i = 0; nb[i]; i++)
+		res = res * 16 + hex_to_int_char(nb[i]);
+	return (res);
+}
+
+void	fill_pkt_payload(t_icmpping *packet)
+{
+	char		*pattern = get_context()->options.pattern_value;
+	int			limit = sizeof(packet->payload);
+	
+	for (int i = 0; i < limit; i += 2)
+	{
+		int			j = 0;
+		char curr[3] = {pattern[j], pattern[j + 1], 0};
+		printf("curr = %s, hex = %d\n", curr, hex_to_int(curr));
+		packet->payload[i] = hex_to_int(curr);
+		j++;
+	}
+}
+
 void	prep_ping_packet(t_icmpping *ping_packet)
 {
 	t_ctx 			*context = get_context();
@@ -99,7 +135,10 @@ void	prep_ping_packet(t_icmpping *ping_packet)
 
 	fill_icmphdr(&icmp_header, &context->seq, &context->id);
 	ping_packet->header = icmp_header;
-	memset((void *)ping_packet->payload, 0x42, 56);
+	if (context->options.pattern)
+		fill_pkt_payload(ping_packet);
+	else
+		memset((void *)ping_packet->payload, 0x42, 56);
 	calculate_checksum(ping_packet);
 }
 

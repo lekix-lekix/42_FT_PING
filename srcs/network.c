@@ -15,7 +15,7 @@
 int		set_socket_options(int *socket, int *err)
 {
 	t_ctx	*context = get_context();
-	struct timeval	timeout = {1, 0};
+	timeval	timeout = {1, 0};
 
 	if (context->options.ttl)
 	{
@@ -24,6 +24,8 @@ int		set_socket_options(int *socket, int *err)
 		if (*err == -1)
 			return (-1);
 	}
+	if (context->options.wait_value)
+		timeout.tv_sec = context->options.wait_value;
 	*err = setsockopt(*socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 	if (*err == -1)
 		return (-1);

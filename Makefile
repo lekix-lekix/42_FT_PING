@@ -18,7 +18,8 @@ SRC = ./srcs/ft_ping.c \
 	./srcs/network.c \
 	./srcs/packet_handling.c \
 	./srcs/print.c \
-	./srcs/utils.c
+	./srcs/utils.c \
+	./srcs/error.c
 		
 OBJ = $(SRC:.c=.o)
 
