@@ -55,7 +55,7 @@ void ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *))
     {
         *lst = curr->next;
         del(curr->content);
-        free(curr);
+        del(curr);
         return;
     }
     while (curr)
@@ -64,7 +64,7 @@ void ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *))
         {
             prev->next = curr->next;
             del(curr->content);
-            free(curr);
+            del(curr);
             return;
         }
         prev = curr;
@@ -157,7 +157,7 @@ float	get_standard_deviation(t_lst **lst)
 	
 	deviations = malloc(sizeof(float) * (lst_size + 1));
 	if (!deviations)
-		exit_error();
+		exit_error(-1);
 
 	t_lst *current = *lst;
 	for (int i = 0; i < lst_size; i++)
@@ -178,10 +178,10 @@ void	store_time(t_ctx *context, float time)
 
 	new_time = malloc(sizeof(float));
 	if (!new_time)
-		exit_error();
+		exit_error(-1);
 	*new_time = time;
 	node = ft_lstnew(new_time);
 	if (!node)
-		exit_error();
+		exit_error(-1);
 	ft_lstadd_back(&context->times, node);
 }

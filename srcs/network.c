@@ -24,7 +24,7 @@ int		set_socket_options(int *socket, int *err)
 		if (*err == -1)
 			return (-1);
 	}
-	if (context->options.wait_value)
+	if (context->options.wait)
 		timeout.tv_sec = context->options.wait_value;
 	*err = setsockopt(*socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 	if (*err == -1)
@@ -51,7 +51,7 @@ void	setup_socket(int *sock, struct addrinfo *res_list)
 			perror("socket");
 		else if (opt_error == -1)
 			perror("setsockopt");
-		exit_error();
+		exit_error(-1);
 	}
 }
 
@@ -72,13 +72,13 @@ void	resolve_host(char *host, struct addrinfo **dest)
 	hints.ai_family = AF_INET; // ipv4
 	hints.ai_socktype = SOCK_RAW; // raw socket
 	err = getaddrinfo(host, NULL, &hints, &(*dest));
-	if (err != 0) // handle other cases
+	if (err != 0)
 	{
 		if (err == -2)
 			dprintf(STDERR, "ping: unknown host\n");
 		else
 			perror("getaddrinfo");
-		exit_error();
+		exit_error(-1);
 	}
 	get_readable_ip_str((*dest)->ai_addr, context->source_dest_ip);
 }

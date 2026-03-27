@@ -30,7 +30,7 @@ void    invalid_value(char *str)
         }
     }
     dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, err);
-    exit(EXIT_FAILURE);
+    exit_error(1);
 }
 
 
@@ -54,12 +54,12 @@ long    convert_check_value(char *nb, long limit)
     if (value > limit)
     {
         dprintf(STDERR, "ping: option value too big: %s\n", nb);
-        exit(EXIT_FAILURE);
+        exit_error(1);
     }
     else if (value <= 0)
     {
         dprintf(STDERR, "ping: option value too small: %s\n", nb);
-        exit(EXIT_FAILURE);
+        exit_error(1);
     }
     return (value);
 }
@@ -75,13 +75,6 @@ int    register_ttl(char *value)
     return (0);
 }
 
-void    print_arg_lst(t_lst **args)
-{
-    for (t_lst *curr = *args; curr; curr = curr->next)
-    {
-        printf("arg = %s\n", (char*)curr->content);
-    }
-}
 
 void    create_arg_lst(char **args, t_lst **args_lst)
 {
@@ -91,10 +84,10 @@ void    create_arg_lst(char **args, t_lst **args_lst)
     {
         new_node = malloc(sizeof(t_lst));
         if (!new_node)
-            exit_error(); // add clear list
+            exit_error(1);
         new_node->content = (void *)strdup(args[i]);
         if (!new_node->content)
-            exit_error();
+            exit_error(1);
         new_node->next = NULL;
         ft_lstadd_back(args_lst, new_node);
     }
@@ -216,7 +209,7 @@ int     register_pattern(char *value)
     context->options.pattern = true;
     context->options.pattern_value = strdup(value);
     if (!context->options.pattern_value)
-        exit_error();
+        exit_error(1);
     return (0);
 }
 
@@ -266,7 +259,6 @@ int     register_option(char *opt, char *value)
 
 int     register_option_char(char opt, char *value)
 {
-    printf("opt c = %c\n", opt);
     switch (opt)
     {
         case '?':
@@ -377,8 +369,6 @@ void    check_all_opt(t_lst **args_lst)
             check_option(args_lst, curr);
             ft_lstdelone(args_lst, curr, free);
             curr = *args_lst;
-            print_arg_lst(args_lst);
-            printf("=====\n");
             if (!curr)
                 break;
         }
@@ -388,22 +378,19 @@ void    check_all_opt(t_lst **args_lst)
 void    parse_args(char **args)
 {
     t_ctx   *context = get_context();
-    t_lst   *args_lst = NULL;
 
-    create_arg_lst(args, &args_lst);
-    print_arg_lst(&args_lst);
-    check_all_opt(&args_lst);
-    print_arg_lst(&args_lst);
-    if (args_lst)
+    create_arg_lst(args, &context->args_lst);
+    check_all_opt(&context->args_lst);
+    if (context->args_lst)
     {
-        context->hostname = strdup((char *)args_lst->content);
+        context->hostname = strdup((char *)context->args_lst->content);
         if (!context->hostname)
-            exit_error();
-        ft_lstclear(&args_lst, free);
+            exit_error(-1);
+        ft_lstclear(&context->args_lst, free);
     }
     else
     {
-        ft_lstclear(&args_lst, free);
+        ft_lstclear(&context->args_lst, free);
         err_missing_host_operand();
     }
 }

@@ -49,7 +49,8 @@ typedef struct s_lst
 typedef struct s_icmpping
 {
     icmphdr             header;
-    char                payload[56];
+    timeval             timestamp;
+    char                payload[40];
 } t_icmpping;
 
 typedef struct s_opt
@@ -84,6 +85,7 @@ typedef struct s_ctx
     t_opt               options;
     int                 socket;
     int                 id;
+    t_lst               *args_lst;
     char                *hostname;
     addrinfo            *dest;
     char                source_dest_ip[INET_ADDRSTRLEN];
@@ -96,7 +98,6 @@ typedef struct s_ctx
 void    parse_args(char **args);
 void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
 t_ctx	*get_context(void);
-void	exit_error(void);
 
 // LIST FUNCTIONS
 t_lst	*ft_lstnew(void *content);
@@ -110,7 +111,7 @@ float	get_standard_deviation(t_lst **lst);
 void	store_time(t_ctx *context, float time);
 
 // UTILS
-void	exit_error(void);
+void	exit_error(int code);
 
 // PACKET HANDLING
 void	prep_ping_packet(t_icmpping *ping_packet);

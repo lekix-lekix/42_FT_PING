@@ -22,20 +22,18 @@
 
 #include "../ft_ping.h"
 
-#define TIMER_START(t) struct timespec t##_start, t##_end; \
-                       clock_gettime(CLOCK_MONOTONIC, &t##_start)
-
-#define TIMER_STOP(t)  clock_gettime(CLOCK_MONOTONIC, &t##_end)
-
-#define TIMER_MS(t)    ((t##_end.tv_sec  - t##_start.tv_sec)  * 1000.0 \
-                      + (t##_end.tv_nsec - t##_start.tv_nsec) / 1e6)
-
 void	sigint_handler(int code)
 {
 	t_ctx			*context = get_context();
-	float			packet_loss = (float)context->seq / (float)context->ping_successes;
+	float			packet_loss;
 
 	(void) code;
+
+	if (context->ping_successes == 0)
+		packet_loss = 100;
+	else
+		packet_loss = (float)context->seq / (float)context->ping_successes;
+
 	printf("--- %s ping statistics ---\n", context->hostname);
 	printf("%d packets transmitted, %d packets received, %.0f%% packet loss\n",
 		context->seq, context->ping_successes, packet_loss == 1 ? 0 : packet_loss);
@@ -71,21 +69,24 @@ void	setup_signal(void)
 
 void	ping_loop(t_ctx *context)
 {
-	t_icmpping		ping_packet;
+	t_icmpping		request;
+	t_icmpping		*reply;
 	struct timeval  start;
 	float			time_elapsed;
 
-	print_begin_output(&ping_packet);
+	print_begin_output(&request);
 	if (context->options.timeout)
 		alarm(context->options.timeout_value);
 	while (1)
 	{
 		gettimeofday(&start, NULL);
-		send_packet(&ping_packet);
+		send_packet(&request);
 		context->seq++;
 		if (receive_packet() == -1) // timeout
 			continue;
-		time_elapsed = get_time_elapsed(&start);
+		reply = (t_icmpping *)(context->current_pkt.raw_content 
+			+ context->current_pkt.ip_header->ihl * 4);
+		time_elapsed = get_time_elapsed(&reply->timestamp);
 		if (context->current_pkt.icmp_header->type == 0) // success
 		{
 			context->ping_successes += 1;

@@ -12,16 +12,21 @@
 
 #include "../ft_ping.h"
 
-void	exit_error(void)
+void	exit_error(int code)
 {
 	t_ctx *context = get_context();
-
+		
 	if (context->dest)
 		freeaddrinfo(context->dest);
-	
-	close(context->socket);
-	ft_lstclear(&context->times, free);
-	exit(EXIT_FAILURE);
+	if (context->socket != -1)
+		close(context->socket);
+	if (context->hostname)
+		free(context->hostname);
+	if (context->times)
+		ft_lstclear(&context->times, free);
+	if (context->args_lst)
+		ft_lstclear(&context->times, free);
+	exit(code);
 }
 
 void	init_options(t_opt *options)
@@ -49,7 +54,7 @@ t_ctx	*get_context(void)
 		context.hostname = NULL;
 		context.dest = NULL;
 		context.times = NULL;
-		context.times = NULL;
+		context.args_lst = NULL;
 		context.seq = 0;
 		context.socket = -1;
 		context.id = getpid();

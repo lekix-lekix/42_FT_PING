@@ -24,7 +24,7 @@ int	print_help(void)
     printf("%s\n", "  -V        print program version");
     printf("%s\n", "");
     printf("%s\n", "Report bugs to <do_not_report_bugs_please@42.fr>.");
-    exit(EXIT_SUCCESS);
+    exit_error(0);
 	return (0);
 }
 
@@ -37,7 +37,7 @@ void print_version(void)
     printf("%s\n", "There is NO WARRANTY, to the extent permitted by law.");
     printf("%s\n", "");
     printf("%s\n", "Written by kipouliq at 42.");
-    exit(EXIT_SUCCESS);
+    exit_error(0);
 }
 
 char  *icmp_error_str(int type, int code)
@@ -180,10 +180,10 @@ void	print_begin_output(t_icmpping *ping_packet)
 
 	if (context->options.verbose)
 		printf("PING %s (%s): %ld data bytes, id 0x%x = %d\n", 
-			context->hostname, context->source_dest_ip, sizeof(ping_packet->payload),
+			context->hostname, context->source_dest_ip, sizeof(*ping_packet) - sizeof(icmphdr),
 			context->id, context->id
 		);
 	else
 		printf("PING %s (%s): %ld data bytes\n", 
-			context->hostname, context->source_dest_ip, sizeof(ping_packet->payload));
+			context->hostname, context->source_dest_ip, sizeof(*ping_packet) - sizeof(icmphdr));
 }

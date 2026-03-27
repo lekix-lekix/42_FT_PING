@@ -18,7 +18,7 @@ void		calculate_checksum(t_icmpping *ping)
 	uint16_t 	*ptr;
 
 	ptr = (uint16_t *)ping;
-	for (int i = 0; i < 32; i++)
+	for (int i = 0; i < (int)sizeof(*ping) / 2; i++)
 	{
 		res += ptr[i];
 		if (res > 0xFFFF)
@@ -64,7 +64,7 @@ int			receive_packet(void)
 		else
 		{
 			perror("recvfrom");
-			exit_error();
+			exit_error(-1);
 		}
 	}
 	context->current_pkt.bytes_read = bytes_read;
@@ -88,11 +88,11 @@ void		send_packet(t_icmpping *ping)
 	if (err == -1)
 	{
 		perror("sendto");
-		exit_error();
+		exit_error(-1);
 	}
 }
 
-uint8_t		hex_to_int_char(char c)
+uint8_t		hex_to_int(char c)
 {
 	char	hex[] = "0123456789abcdef";
 
@@ -104,46 +104,26 @@ uint8_t		hex_to_int_char(char c)
 	return (-1);
 }
 
-int			hex_to_int(char *nb)
-{
-	int		res = 0;
-
-	for (int i = 0; nb[i]; i++)
-		res = res * 16 + hex_to_int_char(nb[i]);
-	return (res);
-}
-
 void		fill_pkt_payload(t_icmpping *packet)
 {
 	char		*pattern = get_context()->options.pattern_value;
-	uint16_t	*ptr = (uint16_t *)pattern;
-	int			limit = sizeof(packet->payload) / 2;
-<<<<<<< Updated upstream
+	int			pattern_size = strlen(pattern);
+	uint8_t		*ptr = (uint8_t *)packet->payload;
+	int			payload_size = sizeof(packet->payload);
 	int			j = 0;
-=======
->>>>>>> Stashed changes
 	
-	printf("liumit = %d\n", limit);
-	for (int i = 0; i < limit; i += 2)
+	for (int i = 0; i < payload_size; i++)
 	{
-<<<<<<< Updated upstream
-		if (!pattern[j])
-			j = 0;
-		uint8_t a = hex_to_int_char(pattern[j]);
-		uint8_t b = hex_to_int_char(pattern[j + 1]);
-		printf("a = %d b = %d\n", a, b);
-		*ptr = (a << 4 | b);
-		printf("ptr = %x\n", *ptr);
-		ptr++;
+		uint8_t a = hex_to_int(pattern[j]);
+		uint8_t b = hex_to_int(pattern[j + 1]);
+		if (!pattern[j + 1])
+			*(ptr + i) = (0x00 << 4 | a);
+		else
+			*(ptr + i) = (a << 4 | b);
 		j += 2;
-=======
-		uint8_t a = hex_to_int_char(pattern[i]);
-		uint8_t b = hex_to_int_char(pattern[i + 1]);
-		*ptr = (a << 8 | b);
-		printf("ptr = %x\n", *ptr);
-		ptr++;
->>>>>>> Stashed changes
-		
+		if ((pattern_size % 2 == 0 && j >= pattern_size - 1)
+			|| (pattern_size % 2 != 0 && j > pattern_size))
+			j = 0;
 	}
 }
 
@@ -153,6 +133,7 @@ void		prep_ping_packet(t_icmpping *ping_packet)
 	icmphdr 		icmp_header;
 
 	fill_icmphdr(&icmp_header, &context->seq, &context->id);
+	gettimeofday(&ping_packet->timestamp, NULL);
 	ping_packet->header = icmp_header;
 	if (context->options.pattern)
 		fill_pkt_payload(ping_packet);
