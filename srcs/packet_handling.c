@@ -92,7 +92,7 @@ void	send_packet(t_icmpping *ping)
 	}
 }
 
-int		hex_to_int_char(char c)
+uint8_t		hex_to_int_char(char c)
 {
 	char	hex[] = "0123456789abcdef";
 
@@ -113,18 +113,26 @@ int		hex_to_int(char *nb)
 	return (res);
 }
 
-void	fill_pkt_payload(t_icmpping *packet)
+void		fill_pkt_payload(t_icmpping *packet)
 {
 	char		*pattern = get_context()->options.pattern_value;
-	int			limit = sizeof(packet->payload);
+	uint16_t	*ptr = (uint16_t *)pattern;
+	int			limit = sizeof(packet->payload) / 2;
+	int			j = 0;
 	
+	printf("liumit = %d\n", limit);
 	for (int i = 0; i < limit; i += 2)
 	{
-		int			j = 0;
-		char curr[3] = {pattern[j], pattern[j + 1], 0};
-		printf("curr = %s, hex = %d\n", curr, hex_to_int(curr));
-		packet->payload[i] = hex_to_int(curr);
-		j++;
+		if (!pattern[j])
+			j = 0;
+		uint8_t a = hex_to_int_char(pattern[j]);
+		uint8_t b = hex_to_int_char(pattern[j + 1]);
+		printf("a = %d b = %d\n", a, b);
+		*ptr = (a << 4 | b);
+		printf("ptr = %x\n", *ptr);
+		ptr++;
+		j += 2;
+		
 	}
 }
 
