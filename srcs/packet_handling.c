@@ -6,13 +6,13 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 17:22:03 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/23 17:22:05 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/03/27 11:57:28 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../ft_ping.h"
 
-void	calculate_checksum(t_icmpping *ping)
+void		calculate_checksum(t_icmpping *ping)
 {	
 	int 		res = 0;
 	uint16_t 	*ptr;
@@ -30,7 +30,7 @@ void	calculate_checksum(t_icmpping *ping)
 	ping->header.checksum = ~res;
 }
 
-void	fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
+void		fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
 {
 	icmp_header->type 				= ICMP_ECHO;
 	icmp_header->code 				= 0;
@@ -39,7 +39,7 @@ void	fill_icmphdr(struct icmphdr *icmp_header, int *seq, int *id)
 	icmp_header->un.echo.sequence 	= htons(*seq);
 }
 
-void	cast_packet(void)
+void		cast_packet(void)
 {
 	t_ctx			*context = get_context();
 	t_pkt			*current_pkt = &context->current_pkt;
@@ -48,7 +48,7 @@ void	cast_packet(void)
 	current_pkt->icmp_header = (icmphdr *)(current_pkt->raw_content + current_pkt->ip_header->ihl * 4);
 }
 
-int		receive_packet(void)
+int			receive_packet(void)
 {
 	t_ctx			*context = get_context();
 	unsigned char	*raw_content = context->current_pkt.raw_content;
@@ -77,7 +77,7 @@ int		receive_packet(void)
 	return (0);
 }
 
-void	send_packet(t_icmpping *ping)
+void		send_packet(t_icmpping *ping)
 {
 	t_ctx	*context = get_context();
 
@@ -104,7 +104,7 @@ uint8_t		hex_to_int_char(char c)
 	return (-1);
 }
 
-int		hex_to_int(char *nb)
+int			hex_to_int(char *nb)
 {
 	int		res = 0;
 
@@ -118,11 +118,15 @@ void		fill_pkt_payload(t_icmpping *packet)
 	char		*pattern = get_context()->options.pattern_value;
 	uint16_t	*ptr = (uint16_t *)pattern;
 	int			limit = sizeof(packet->payload) / 2;
+<<<<<<< Updated upstream
 	int			j = 0;
+=======
+>>>>>>> Stashed changes
 	
 	printf("liumit = %d\n", limit);
 	for (int i = 0; i < limit; i += 2)
 	{
+<<<<<<< Updated upstream
 		if (!pattern[j])
 			j = 0;
 		uint8_t a = hex_to_int_char(pattern[j]);
@@ -132,11 +136,18 @@ void		fill_pkt_payload(t_icmpping *packet)
 		printf("ptr = %x\n", *ptr);
 		ptr++;
 		j += 2;
+=======
+		uint8_t a = hex_to_int_char(pattern[i]);
+		uint8_t b = hex_to_int_char(pattern[i + 1]);
+		*ptr = (a << 8 | b);
+		printf("ptr = %x\n", *ptr);
+		ptr++;
+>>>>>>> Stashed changes
 		
 	}
 }
 
-void	prep_ping_packet(t_icmpping *ping_packet)
+void		prep_ping_packet(t_icmpping *ping_packet)
 {
 	t_ctx 			*context = get_context();
 	icmphdr 		icmp_header;
