@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 // BONUSES
-// -i --interval=NUMBER interval (LONG INT MAX) Float
+// -i --interval=NUMBER interval Float
 // -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first 2 chars taken, in hex
 // -W --wait for N seconds for response	(INT_MAX)
 // --ttl
@@ -102,7 +102,6 @@ void	ping_loop(t_ctx *context)
 		}
 		else
 			sleep(1);
-		time_elapsed = get_time_elapsed(&start);
 	}
 }
 

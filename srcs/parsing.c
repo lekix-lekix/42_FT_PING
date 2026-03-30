@@ -30,7 +30,7 @@ void    invalid_value(char *str)
         }
     }
     dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, err);
-    exit_error(1);
+    exit_error(EXIT_FAILURE);
 }
 
 
@@ -54,12 +54,12 @@ long    convert_check_value(char *nb, long limit)
     if (value > limit)
     {
         dprintf(STDERR, "ping: option value too big: %s\n", nb);
-        exit_error(1);
+        exit_error(EXIT_FAILURE);
     }
     else if (value <= 0)
     {
         dprintf(STDERR, "ping: option value too small: %s\n", nb);
-        exit_error(1);
+        exit_error(EXIT_FAILURE);
     }
     return (value);
 }
@@ -84,10 +84,10 @@ void    create_arg_lst(char **args, t_lst **args_lst)
     {
         new_node = malloc(sizeof(t_lst));
         if (!new_node)
-            exit_error(1);
+            exit_error(EXIT_FAILURE);
         new_node->content = (void *)strdup(args[i]);
         if (!new_node->content)
-            exit_error(1);
+            exit_error(EXIT_FAILURE);
         new_node->next = NULL;
         ft_lstadd_back(args_lst, new_node);
     }
@@ -209,7 +209,7 @@ int     register_pattern(char *value)
     context->options.pattern = true;
     context->options.pattern_value = strdup(value);
     if (!context->options.pattern_value)
-        exit_error(1);
+        exit_error(EXIT_FAILURE);
     return (0);
 }
 
@@ -312,7 +312,7 @@ int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
                 err_requires_argument(opt);
             register_option(opt, curr->next->content);
             ft_lstdelone(args_lst, curr->next, free);
-            curr->next = NULL;
+            curr->next = NULL;      // sus
         }
         return (true);
     }

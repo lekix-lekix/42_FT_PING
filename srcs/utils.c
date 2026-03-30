@@ -25,8 +25,8 @@ void	exit_error(int code)
 	if (context->times)
 		ft_lstclear(&context->times, free);
 	if (context->args_lst)
-		ft_lstclear(&context->times, free);
-	exit(code);
+		ft_lstclear(&context->args_lst, free);
+    exit(code);
 }
 
 void	init_options(t_opt *options)
