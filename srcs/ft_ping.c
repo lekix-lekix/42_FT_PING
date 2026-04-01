@@ -24,6 +24,7 @@
 // PING 1.1.1.1 (1.1.1.1): 56 data bytes
 // 36 bytes from 10.0.2.2: Time to live exceeded
 
+// intercept packets with tcpdump -i eth0 icmp
 
 #include "../ft_ping.h"
 

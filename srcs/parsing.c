@@ -237,7 +237,7 @@ int     register_option_char(char opt, char *value)
             return (register_timeout(value));
             break;
 
-        case 'W':
+        case 'c':
             return (register_count(value));
             break;
     
