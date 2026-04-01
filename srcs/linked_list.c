@@ -108,12 +108,15 @@ void    create_arg_lst(char **args, t_lst **args_lst)
 
     for (int i = 0; args[i]; i++)
     {
-        new_node = malloc(sizeof(t_lst));
+		new_node = malloc(sizeof(t_lst));
         if (!new_node)
             exit_error(EXIT_FAILURE);
         new_node->content = (void *)strdup(args[i]);
         if (!new_node->content)
+		{
+			free(new_node);
             exit_error(EXIT_FAILURE);
+		}
         new_node->next = NULL;
         ft_lstadd_back(args_lst, new_node);
     }
@@ -199,6 +202,9 @@ void	store_time(t_ctx *context, float time)
 	*new_time = time;
 	node = ft_lstnew(new_time);
 	if (!node)
+	{
+		free(new_time);
 		exit_error(-1);
+	}
 	ft_lstadd_back(&context->times, node);
 }

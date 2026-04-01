@@ -15,10 +15,11 @@
 bool    ishex(char c)
 {
     char hex[] = "0123456789abcdef";
+    char hex_caps[] = "0123456789abcdef";
 
     for (int i = 0; hex[i]; i++)
     {
-        if (hex[i] == c)
+        if (hex[i] == c || hex_caps[i] == c)
             return (true);
     }
     return (false);
@@ -37,6 +38,26 @@ bool    isallhex(char *str, char **err)
     return (true);
 }
 
+bool    isnum(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+
+bool    isallnum(char *str)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (isnum(str[i]) == false)
+            return false;
+    }
+    return true;
+}
+
+bool    is_an_opt(char *arg)
+{
+    return (arg[0] == '-');
+}
+
 void	exit_error(int code)
 {
 	t_ctx *context = get_context();
@@ -47,6 +68,8 @@ void	exit_error(int code)
 		close(context->socket);
 	if (context->hostname)
 		free(context->hostname);
+	if (context->options.pattern)
+		free(context->options.pattern_value);	
 	if (context->times)
 		ft_lstclear(&context->times, free);
 	if (context->args_lst)

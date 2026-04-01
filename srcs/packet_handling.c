@@ -95,10 +95,11 @@ void		send_packet(t_icmpping *ping)
 uint8_t		hex_to_int(char c)
 {
 	char	hex[] = "0123456789abcdef";
+	char	hex_caps[] = "0123456789ABCDEF";
 
 	for (int i = 0; hex[i]; i++)
 	{
-		if (hex[i] == c)
+		if (hex[i] == c || hex_caps[i] == c)
 			return (i);
 	}
 	return (-1);
@@ -109,10 +110,9 @@ void		fill_pkt_payload(t_icmpping *packet)
 	char		*pattern = get_context()->options.pattern_value;
 	int			pattern_size = strlen(pattern);
 	uint8_t		*ptr = (uint8_t *)packet->payload;
-	int			payload_size = sizeof(packet->payload);
 	int			j = 0;
 	
-	for (int i = 0; i < payload_size; i++)
+	for (int i = 0; i < (int)sizeof(packet->payload); i++)
 	{
 		uint8_t a = hex_to_int(pattern[j]);
 		uint8_t b = hex_to_int(pattern[j + 1]);
@@ -138,7 +138,11 @@ void		prep_ping_packet(t_icmpping *ping_packet)
 	if (context->options.pattern)
 		fill_pkt_payload(ping_packet);
 	else
-		memset((void *)ping_packet->payload, 0x42, 56);
+	{
+		uint8_t	*curr = (uint8_t *)ping_packet->payload;
+		for (int i = 0; i < (int)sizeof(ping_packet->payload); i++)
+			*(curr + i) = i;
+	}
 	calculate_checksum(ping_packet);
 }
 

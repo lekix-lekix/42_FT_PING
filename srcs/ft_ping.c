@@ -10,20 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// BONUSES
-// -i --interval=NUMBER interval Float
-// -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first 2 chars taken, in hex
-// -W --wait for N seconds for response	(INT_MAX)
-// --ttl
-// -w --timeout=N (MAX_INT) stop after N seconds
-
-// vagrant@debian12:~/ft_ping$ ping -p --ttl=1  1.1.1.1
-// ping: error in pattern near --ttl=1
-
-// vagrant@debian12:~/ft_ping$ ping --ttl 1 1.1.1.1
-// PING 1.1.1.1 (1.1.1.1): 56 data bytes
-// 36 bytes from 10.0.2.2: Time to live exceeded
-
 // intercept packets with tcpdump -i eth0 icmp
 
 #include "../ft_ping.h"

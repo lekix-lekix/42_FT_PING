@@ -19,9 +19,14 @@ int	print_help(void)
     printf("%s\n", "");
     printf("%s\n", " Valid options:");
     printf("%s\n", "");
-    printf("%s\n", "  -v        verbose output");
-    printf("%s\n", "  -?        give this help list");
-    printf("%s\n", "  -V        print program version");
+    printf("%s\n", "  -c, --count=NUMBER			stop after sending NUMBER packets");
+    printf("%s\n", "  -i, --interval=NUMBER			wait NUMBER seconds between sending each packet");
+    printf("%s\n", "  -p, --pattern=PATTERN			fill ICMP packet with given pattern (hex)");
+    printf("%s\n", "      --ttl=N				specify N as time-to-live");
+    printf("%s\n", "  -v, --verbose				verbose output");
+    printf("%s\n", "  -w, --timeout=N			stop after N seconds");
+    printf("%s\n", "  -?, --help				give this help list");
+    printf("%s\n", "  -V, --version				print program version");
     printf("%s\n", "");
     printf("%s\n", "Report bugs to <do_not_report_bugs_please@42.fr>.");
     exit_error(0);

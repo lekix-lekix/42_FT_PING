@@ -110,11 +110,13 @@ float	get_min(t_lst **lst);
 float	get_max(t_lst **lst);
 float	get_standard_deviation(t_lst **lst);
 void	store_time(t_ctx *context, float time);
-void    print_list(t_lst **lst);
 
 // UTILS
 void	exit_error(int code);
 bool    isallhex(char *str, char **err);
+bool    isallnum(char *str);
+bool    isnum(char c);
+bool    is_an_opt(char *arg);
 
 // PACKET HANDLING
 void	prep_ping_packet(t_icmpping *ping_packet);

@@ -12,11 +12,6 @@
 
 #include "../ft_ping.h"
 
-bool    isnum(char c)
-{
-    return (c >= '0' && c <= '9');
-}
-
 void    invalid_value(char *str)
 {
     char *err;
@@ -31,17 +26,6 @@ void    invalid_value(char *str)
     }
     dprintf(STDERR, "ping: invalid value (`%s' near `%s')\n", str, err);
     exit_error(EXIT_FAILURE);
-}
-
-
-bool    isallnum(char *str)
-{
-    for (int i = 0; str[i]; i++)
-    {
-        if (isnum(str[i]) == false)
-            return false;
-    }
-    return true;
 }
 
 long    convert_check_value(char *nb, long limit)
@@ -62,17 +46,6 @@ long    convert_check_value(char *nb, long limit)
         exit_error(EXIT_FAILURE);
     }
     return (value);
-}
-
-int    register_ttl(char *value)
-{
-    t_ctx   *context = get_context();
-    int     ttl_value = 0;
-
-    ttl_value = convert_check_value(value, UINT8_MAX);
-    context->options.ttl = true;
-    context->options.ttl_value = ttl_value;
-    return (0);
 }
 
 bool    is_valid_opt_char(char c)
@@ -103,6 +76,17 @@ bool    is_valid_opt_str(char *str)
             return (true);
     }
     return (false);
+}
+
+int    register_ttl(char *value)
+{
+    t_ctx   *context = get_context();
+    int     ttl_value = 0;
+
+    ttl_value = convert_check_value(value, UINT8_MAX);
+    context->options.ttl = true;
+    context->options.ttl_value = ttl_value;
+    return (0);
 }
 
 int     register_interval(char *value)
@@ -180,8 +164,8 @@ int     register_verbose(void)
 
 bool    option_needs_arg(char *opt)
 {
-    if (strncmp(opt, "verbose", strlen(opt)) == 0 || strncmp(opt, "help", strlen(opt)) == 0
-        || strncmp(opt, "version", strlen(opt)) == 0)
+    if (strncmp(opt, "--verbose", strlen(opt)) == 0 || strncmp(opt, "--help", strlen(opt)) == 0
+        || strncmp(opt, "--version", strlen(opt)) == 0)
         return (false);
     return (true);
 }
@@ -211,6 +195,8 @@ int     register_option(char *opt, char *value)
         return (register_timeout(value));
     if (strncmp(opt, "verbose", 7) == 0)
         return (register_verbose());
+    if (strncmp(opt, "version", 7) == 0)
+        print_version();
     return (0);
 }
 
@@ -220,6 +206,10 @@ int     register_option_char(char opt, char *value)
     {
         case '?':
             return (print_help());
+            break;
+
+        case 'V':
+            print_version();
             break;
 
         case 'i':
@@ -254,7 +244,7 @@ int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
     {        
         char *value = eq + 1;
         *eq = 0;
-        if (option_needs_arg(opt))
+        if (!option_needs_arg(opt))
             err_forbid_argument(opt);
         if (!is_valid_opt_str(opt))
             err_unrecognized_option(opt);
@@ -270,6 +260,8 @@ int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
             register_option(opt, curr->next->content);
             ft_lstdelone(args_lst, curr->next, free);
         }
+        else
+            register_option(opt, NULL);
         return (true);
     }
 }
@@ -278,7 +270,7 @@ int     s_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
 {
     opt += 1;
 
-    for (int i = 0; opt[i]; i++)
+    for (int i = 0; opt[i]; opt += 1)
     {
         if (!is_valid_opt_char(opt[i]))
             err_invalid_option(opt[i]);
@@ -311,11 +303,6 @@ bool    check_option(t_lst **args_lst, t_lst *curr)
     return (true);
 }
 
-bool    is_an_opt(char *arg)
-{
-    return (arg[0] == '-');
-}
-
 void    check_all_opt(t_lst **args_lst)
 {
     t_lst *curr = *args_lst;
@@ -331,13 +318,6 @@ void    check_all_opt(t_lst **args_lst)
         }
         curr = curr->next;
     }
-}
-
-void    print_list(t_lst **lst)
-{
-    for (t_lst *curr = *lst; curr; curr = curr->next)
-        printf("arg = %s\n", (char *)curr->content);
-    printf("========\n");
 }
 
 void    parse_args(char **args)
