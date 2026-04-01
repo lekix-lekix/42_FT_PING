@@ -12,6 +12,31 @@
 
 #include "../ft_ping.h"
 
+bool    ishex(char c)
+{
+    char hex[] = "0123456789abcdef";
+
+    for (int i = 0; hex[i]; i++)
+    {
+        if (hex[i] == c)
+            return (true);
+    }
+    return (false);
+}
+
+bool    isallhex(char *str, char **err)
+{
+    for (int i = 0; str[i]; i++)
+    {
+        if (!ishex(str[i]))
+        {
+            *err = str + i;
+            return (false);
+        }
+    }
+    return (true);
+}
+
 void	exit_error(int code)
 {
 	t_ctx *context = get_context();
@@ -36,12 +61,12 @@ void	init_options(t_opt *options)
 	options->timeout = false;
 	options->ttl = false;
 	options->verbose = false;
-	options->wait = false;
+	options->count = false;
 
 	options->pattern_value = NULL;
 	options->ttl_value = -1;
 	options->timeout_value = -1;
-	options->wait_value = -1;
+	options->count_value = -1;
 }
 
 t_ctx	*get_context(void)

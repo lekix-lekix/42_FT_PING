@@ -60,12 +60,12 @@ typedef struct s_opt
     bool                timeout;
     bool                ttl;
     bool                verbose;
-    bool                wait;
+    bool                count;
     char                *pattern_value;
     timeval             interval_value;
     int                 ttl_value;
     int                 timeout_value;
-    int                 wait_value;
+    int                 count_value;
 
 } t_opt;
 
@@ -100,6 +100,7 @@ void	get_readable_ip_str(struct sockaddr *ai_addr, char *ipaddr_str);
 t_ctx	*get_context(void);
 
 // LIST FUNCTIONS
+void    create_arg_lst(char **args, t_lst **args_lst);
 t_lst	*ft_lstnew(void *content);
 void	ft_lstadd_back(t_lst **lst, t_lst *new);
 void	ft_lstclear(t_lst **lst, void (*del)(void *));
@@ -112,6 +113,7 @@ void	store_time(t_ctx *context, float time);
 
 // UTILS
 void	exit_error(int code);
+bool    isallhex(char *str, char **err);
 
 // PACKET HANDLING
 void	prep_ping_packet(t_icmpping *ping_packet);

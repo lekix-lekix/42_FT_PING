@@ -75,6 +75,6 @@ void    err_value_too_big(char *value)
 
 void    err_pattern(char *value)
 {
-    dprintf(STDERR, "ping: error in pattern near %c\n", *value);
+    dprintf(STDERR, "ping: error in pattern near %s\n", value);
     exit_error(1);
 }

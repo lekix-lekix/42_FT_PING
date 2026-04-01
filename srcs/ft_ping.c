@@ -15,10 +15,15 @@
 // -p --pattern=PATTERN pattern (fill payload) hex -> fill all bytes with first 2 chars taken, in hex
 // -W --wait for N seconds for response	(INT_MAX)
 // --ttl
-// -w --timeout=N (MAX_INT) stop after N seconds 
+// -w --timeout=N (MAX_INT) stop after N seconds
 
 // vagrant@debian12:~/ft_ping$ ping -p --ttl=1  1.1.1.1
 // ping: error in pattern near --ttl=1
+
+// vagrant@debian12:~/ft_ping$ ping --ttl 1 1.1.1.1
+// PING 1.1.1.1 (1.1.1.1): 56 data bytes
+// 36 bytes from 10.0.2.2: Time to live exceeded
+
 
 #include "../ft_ping.h"
 
@@ -95,6 +100,8 @@ void	ping_loop(t_ctx *context)
 		}
 		else
 			print_error_output();
+		if (context->options.count && context->options.count_value == context->seq)
+			return (sigint_handler(0));
 		if (context->options.interval)
 		{
 			sleep(context->options.interval_value.tv_sec);

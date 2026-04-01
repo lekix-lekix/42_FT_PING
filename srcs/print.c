@@ -161,10 +161,14 @@ void	print_error_output(void)
 {
 	t_ctx		*context = get_context();
 	icmphdr		*icmp = context->current_pkt.icmp_header;
+	iphdr		*iphdr = context->current_pkt.ip_header;
+	char		src_addr[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &iphdr->daddr, src_addr, INET_ADDRSTRLEN);
 
 	printf("%ld bytes from %s: %s\n", 
 		context->current_pkt.bytes_read - sizeof(struct iphdr),
-		context->source_dest_ip,
+		src_addr,
 		icmp_error_str(icmp->type, icmp->code)
 	);
 	if (context->options.verbose)

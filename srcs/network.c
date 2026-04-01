@@ -24,8 +24,6 @@ int		set_socket_options(int *socket, int *err)
 		if (*err == -1)
 			return (-1);
 	}
-	if (context->options.wait)
-		timeout.tv_sec = context->options.wait_value;
 	*err = setsockopt(*socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 	if (*err == -1)
 		return (-1);

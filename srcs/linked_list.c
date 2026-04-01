@@ -102,6 +102,23 @@ int	ft_lstsize(t_lst *lst)
 	return (size);
 }
 
+void    create_arg_lst(char **args, t_lst **args_lst)
+{
+    t_lst   *new_node = NULL;
+
+    for (int i = 0; args[i]; i++)
+    {
+        new_node = malloc(sizeof(t_lst));
+        if (!new_node)
+            exit_error(EXIT_FAILURE);
+        new_node->content = (void *)strdup(args[i]);
+        if (!new_node->content)
+            exit_error(EXIT_FAILURE);
+        new_node->next = NULL;
+        ft_lstadd_back(args_lst, new_node);
+    }
+}
+
 float   calculate_avg(t_lst **lst)
 {
     float   avg	  = 0;

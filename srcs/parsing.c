@@ -75,27 +75,9 @@ int    register_ttl(char *value)
     return (0);
 }
 
-
-void    create_arg_lst(char **args, t_lst **args_lst)
-{
-    t_lst   *new_node = NULL;
-
-    for (int i = 0; args[i]; i++)
-    {
-        new_node = malloc(sizeof(t_lst));
-        if (!new_node)
-            exit_error(EXIT_FAILURE);
-        new_node->content = (void *)strdup(args[i]);
-        if (!new_node->content)
-            exit_error(EXIT_FAILURE);
-        new_node->next = NULL;
-        ft_lstadd_back(args_lst, new_node);
-    }
-}
-
 bool    is_valid_opt_char(char c)
 {
-    char valid[] = "ipvVwW?";
+    char valid[] = "ipvVwc?";
 
     for (int i = 0; valid[i]; i++)
     {
@@ -107,12 +89,12 @@ bool    is_valid_opt_char(char c)
 
 bool    is_valid_opt_str(char *str)
 {
-    char *valid[] = {"interval", "interval=",
+    char *valid[] = {"count", "count=",
+        "interval", "interval=",
         "pattern", "pattern=", 
-        "wait", "wait=", 
         "ttl", "ttl=", 
         "timeout", "timeout=",
-        "verbose", "version", "help", NULL};         // verbose= : "doesnt allow an argument"
+        "verbose", "version", "help", NULL};
 
     str += 2;
     for (int i = 0; valid[i]; i++)
@@ -136,7 +118,7 @@ int     register_interval(char *value)
     float decimal = modff(val, &val);
     context->options.interval = true;
     context->options.interval_value.tv_sec = val;
-    context->options.interval_value.tv_usec = decimal;
+    context->options.interval_value.tv_usec = decimal * 1000000;
     return (0);
 }
 
@@ -157,46 +139,21 @@ int    register_timeout(char *value)
     return (0);
 }
 
-int     register_wait(char *value)
+int     register_count(char *value)
 {
     t_ctx   *context = get_context();
     char    *error = NULL;
-    long    wait = strtol(value, &error, 10);
+    long    count = strtol(value, &error, 10);
 
     if (*error)
         err_invalid_value(value, error);
-    if (wait > INT32_MAX)
+    if (count > INT32_MAX)
         err_value_too_big(value);
-    if (wait <= 0)
+    if (count <= 0)
         err_value_too_small(value);
-    context->options.wait = true;
-    context->options.wait_value = (int)wait;
+    context->options.count = true;
+    context->options.count_value = (int)count;
     return (0);
-}
-
-bool    ishex(char c)
-{
-    char hex[] = "0123456789abcdef";
-
-    for (int i = 0; hex[i]; i++)
-    {
-        if (hex[i] == c)
-            return (true);
-    }
-    return (false);
-}
-
-bool    isallhex(char *str, char **err)
-{
-    for (int i = 0; str[i]; i++)
-    {
-        if (!ishex(str[i]))
-        {
-            *err = str + i;
-            return (false);
-        }
-    }
-    return (true);
 }
 
 int     register_pattern(char *value)
@@ -246,8 +203,8 @@ int     register_option(char *opt, char *value)
         return (register_interval(value));
     if (strncmp(opt, "pattern", 7) == 0)
         return (register_pattern(value));
-    if (strncmp(opt, "wait", 4) == 0)
-        return (register_wait(value));
+    if (strncmp(opt, "count", 5) == 0)
+        return (register_count(value));
     if (strncmp(opt, "ttl", 3) == 0)
         return (register_ttl(value));
     if (strncmp(opt, "timeout", 7) == 0)
@@ -281,7 +238,7 @@ int     register_option_char(char opt, char *value)
             break;
 
         case 'W':
-            return (register_wait(value));
+            return (register_count(value));
             break;
     
         default:
@@ -312,7 +269,6 @@ int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
                 err_requires_argument(opt);
             register_option(opt, curr->next->content);
             ft_lstdelone(args_lst, curr->next, free);
-            curr->next = NULL;      // sus
         }
         return (true);
     }
@@ -373,6 +329,12 @@ void    check_all_opt(t_lst **args_lst)
                 break;
         }
     }
+}
+
+void    print_list(t_lst **lst)
+{
+    for (t_lst *curr = *lst; curr; curr = curr->next)
+        printf("arg = %s\n", (char *)curr->content);
 }
 
 void    parse_args(char **args)
