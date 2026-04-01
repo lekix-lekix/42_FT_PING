@@ -110,6 +110,7 @@ float	get_min(t_lst **lst);
 float	get_max(t_lst **lst);
 float	get_standard_deviation(t_lst **lst);
 void	store_time(t_ctx *context, float time);
+void    print_list(t_lst **lst);
 
 // UTILS
 void	exit_error(int code);

@@ -69,7 +69,7 @@ void ft_lstdelone(t_lst **lst, t_lst *to_del, void (*del)(void *))
         }
         prev = curr;
         curr = curr->next;
-    }
+    }	
 }
 
 void	ft_lstclear(t_lst **lst, void (*del)(void *))

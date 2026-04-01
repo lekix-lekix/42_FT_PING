@@ -318,16 +318,18 @@ bool    is_an_opt(char *arg)
 
 void    check_all_opt(t_lst **args_lst)
 {
-    for (t_lst *curr = *args_lst; curr; curr = curr->next)
+    t_lst *curr = *args_lst;
+
+    while (curr)
     {
         if (is_an_opt((char *)curr->content))
         {
             check_option(args_lst, curr);
             ft_lstdelone(args_lst, curr, free);
             curr = *args_lst;
-            if (!curr)
-                break;
+            continue ;
         }
+        curr = curr->next;
     }
 }
 
@@ -335,6 +337,7 @@ void    print_list(t_lst **lst)
 {
     for (t_lst *curr = *lst; curr; curr = curr->next)
         printf("arg = %s\n", (char *)curr->content);
+    printf("========\n");
 }
 
 void    parse_args(char **args)
