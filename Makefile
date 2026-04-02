@@ -6,7 +6,7 @@
 #    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/03/09 12:05:19 by kipouliq          #+#    #+#              #
-#    Updated: 2026/03/18 13:33:02 by kipouliq         ###   ########.fr        #
+#    Updated: 2026/04/02 13:51:38 by kipouliq         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -41,7 +41,8 @@ $(OBJS_DIR)%.o: %.c
 
 $(NAME) : $(OBJS)
 	$(LINK)
-	sudo setcap cap_net_raw=ep ./$(NAME)
+	sudo cp ./$(NAME) /usr/local/bin/$(NAME)
+	sudo setcap cap_net_raw=ep /usr/local/bin/$(NAME)
 
 valgrind : $(OBJS)
 	$(LINK)
@@ -53,6 +54,7 @@ clean :
 fclean : clean
 	rm -f $(NAME)
 	rm -rf ./.vagrant
+	rm -rf ./ft_ping_repo
 	
 re : fclean
 	make all
