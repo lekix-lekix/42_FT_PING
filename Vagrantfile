@@ -1,6 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/debian12"
   config.vm.synced_folder "~/.ssh", "/home/vagrant/.ssh_host"  # removed type constraint
+  config.vm.synced_folder "./ft_ping", "/home/vagrant/ft_ping"  # removed type constraint
 
   config.vm.define "ft_ping_vm" do |ft_ping_vm|
     ft_ping_vm.vm.provider "virtualbox"
@@ -27,9 +28,10 @@ Host github.com
 EOF
     chmod 600 ~/.ssh/config
     
+    ssh-keyscan vogsphere.42paris.fr >> ~/.ssh/known_hosts 2>/dev/null
     ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
     
-    git clone git@github.com:lekix-lekix/42_FT_PING.git ft_ping
+    # git clone git@github.com:lekix-lekix/42_FT_PING.git ft_ping
     SHELL
   end
 end

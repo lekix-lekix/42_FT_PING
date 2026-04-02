@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 14:31:34 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/13 17:13:54 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/04/02 13:29:57 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 void    invalid_value(char *str)
 {
-    char *err;
+    char *err = NULL;
 
     for (int i = 0; str[i]; i++)
     {
