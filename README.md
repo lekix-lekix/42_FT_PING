@@ -54,7 +54,7 @@ This project allows sending ICMP Echo requests to a target and measuring respons
 
     vagrant ssh
 
-### 4. Build the project (if needed)
+### 4. Build the project
 
     cd ft_ping && make
 
