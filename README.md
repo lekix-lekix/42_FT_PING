@@ -2,81 +2,81 @@
 
 ## 🧠 Overview
 
-`ft_ping` est une implémentation personnalisée de la commande `ping`, développée en utilisant des **raw sockets**.  
-Ce projet permet d’envoyer des requêtes ICMP Echo vers une cible et de mesurer les temps de réponse, tout en manipulant directement les couches basses du réseau.
+`ft_ping` is a custom implementation of the `ping` command, built using **raw sockets**.  
+This project allows sending ICMP Echo requests to a target and measuring response times while working directly with low-level network layers.
 
 ---
 
-## ⚙️ Fonctionnalités
+## ⚙️ Features
 
-- Envoi de paquets ICMP Echo Request
-- Réception et analyse des ICMP Echo Reply
-- Gestion des erreurs réseau
-- Affichage des statistiques (RTT, pertes, etc.)
-- Utilisation de **raw sockets** (nécessite privilèges root)
+- Send ICMP Echo Request packets
+- Receive and parse ICMP Echo Reply packets
+- Handle network errors
+- Display statistics (RTT, packet loss, etc.)
+- Uses **raw sockets** (requires root privileges)
 
 ---
 
-## 🧩 Options supportées
+## 🧩 Supported Options
 
 | Option        | Description |
 |--------------|------------|
-| `--ttl`      | Définit le Time To Live des paquets |
-| `--pattern`  | Définit un motif personnalisé dans les données envoyées |
-| `--count`    | Nombre de requêtes à envoyer |
-| `--timeout`  | Temps maximum d’attente pour une réponse |
-| `--interval` | Intervalle entre chaque requête |
-| `--verbose`  | Active un mode verbeux |
+| `--ttl`      | Set the Time To Live for packets |
+| `--pattern`  | Define a custom payload pattern |
+| `--count`    | Number of requests to send |
+| `--timeout`  | Maximum wait time for a reply |
+| `--interval` | Delay between each request |
+| `--verbose`  | Enable verbose mode |
 
 ---
 
-## 🛠️ Prérequis
+## 🛠️ Requirements
 
-- 🐧 Linux (**Ubuntu / Debian** recommandé)
+- 🐧 Linux (**Ubuntu / Debian** recommended)
 - 📦 `apt`
 - 📦 Vagrant
-- 📦 VirtualBox (ou autre provider compatible)
+- 📦 VirtualBox (or another compatible provider)
 
 ---
 
-## 🚀 Installation & Exécution
+## 🚀 Installation & Usage
 
-### 1. Cloner le repository
+### 1. Clone the repository
 
-    git clone https://github.com/your-username/ft_ping.git
+    git clone https://github.com/lekix-lekix/ft_ping.git
     cd ft_ping
 
-### 2. Lancer l’environnement Vagrant
+### 2. Start the Vagrant environment
 
     ./start_vagrant
 
-### 3. Se connecter à la machine virtuelle
+### 3. Connect to the virtual machine
 
     vagrant ssh
 
-### 4. Compiler le projet (si nécessaire)
+### 4. Build the project (if needed)
 
-    make
+    cd ft_ping && make
 
-### 5. Exécuter ft_ping
+### 5. Run ft_ping
 
-    sudo ./ft_ping <hostname>
+    ft_ping <hostname>
 
-Exemple :
+Example:
 
-    sudo ./ft_ping google.com
+    ft_ping google.com
 
 ---
 
-## 🧪 Exemple avec options
+## 🧪 Example with options
 
-    sudo ./ft_ping google.com --count 5 --interval 1 --ttl 64 --verbose
+    ft_ping google.com --count 5 --interval 1 --ttl 64 --verbose
 
 ---
 
 ## 🔐 Permissions
 
-L’utilisation de **raw sockets** nécessite des privilèges administrateur :
+Using **raw sockets** requires administrative privileges:
 
     sudo ./ft_ping <hostname>
 
@@ -84,33 +84,33 @@ L’utilisation de **raw sockets** nécessite des privilèges administrateur :
 
 ## 🏗️ Architecture
 
-- Utilisation de `AF_INET` et `SOCK_RAW`
-- Construction manuelle des paquets ICMP
-- Calcul du checksum
-- Gestion du timing (RTT)
-- Parsing des réponses réseau
+- Uses `AF_INET` and `SOCK_RAW`
+- Manual ICMP packet construction
+- Checksum calculation
+- RTT (round-trip time) handling
+- Network response parsing
 
 ---
 
-## 📊 Résultat attendu
+## 📊 Expected Output
 
-- Affichage similaire à `ping`
-- Temps de réponse en ms
-- Statistiques finales :
-  - paquets envoyés / reçus
-  - perte (%)
-  - min / avg / max RTT
+- Output similar to `ping`
+- Response time in milliseconds
+- Final statistics:
+  - packets sent / received
+  - packet loss (%)
+  - min / avg / max RTT / standard deviation
 
 ---
 
 ## 📌 Notes
 
-- Projet pédagogique pour comprendre ICMP et les sockets bas niveau
-- Nécessite souvent `sudo`
-- Testé sur Ubuntu / Debian
+- Educational project to understand ICMP and low-level networking
+- Requires `sudo` in most cases
+- Tested on Ubuntu / Debian
 
 ---
 
-## 👨‍💻 Auteur
+## 👨‍💻 Author
 
-Projet réalisé dans le cadre de l’apprentissage des systèmes réseaux et de la programmation bas niveau en C.
+Project developed as part of learning network systems and low-level C programming at 42 Paris school.
