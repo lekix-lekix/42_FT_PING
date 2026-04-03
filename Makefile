@@ -6,7 +6,7 @@
 #    By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/03/09 12:05:19 by kipouliq          #+#    #+#              #
-#    Updated: 2026/04/02 13:51:38 by kipouliq         ###   ########.fr        #
+#    Updated: 2026/04/03 11:36:46 by kipouliq         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -54,7 +54,7 @@ clean :
 fclean : clean
 	rm -f $(NAME)
 	rm -rf ./.vagrant
-	rm -rf ./ft_ping_repo
+	rm -rf ./ft_ping
 	
 re : fclean
 	make all

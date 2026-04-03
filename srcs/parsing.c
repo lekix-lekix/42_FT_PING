@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 14:31:34 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/04/02 13:29:57 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/04/03 11:30:56 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -255,6 +255,8 @@ int     d_dashed_option(char *opt, t_lst *curr, t_lst **args_lst)
     {
         if (option_needs_arg(opt))
         {
+            if (!is_valid_opt_str(opt))
+                err_unrecognized_option(opt);
             if (!curr->next)
                 err_requires_argument(opt);
             register_option(opt, curr->next->content);

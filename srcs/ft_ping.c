@@ -6,7 +6,7 @@
 /*   By: kipouliq <kipouliq@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/05 15:41:53 by kipouliq          #+#    #+#             */
-/*   Updated: 2026/03/16 11:44:26 by kipouliq         ###   ########.fr       */
+/*   Updated: 2026/04/03 11:29:24 by kipouliq         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,8 @@ void	ping_loop(t_ctx *context)
 		gettimeofday(&start, NULL);
 		send_packet(&request);
 		context->seq++;
+		if (context->options.count && context->options.count_value == context->seq)
+			return (sigint_handler(0));
 		if (receive_packet() == -1) // timeout
 			continue;
 		reply = (t_icmpping *)(context->current_pkt.raw_content 
@@ -87,8 +89,6 @@ void	ping_loop(t_ctx *context)
 		}
 		else
 			print_error_output();
-		if (context->options.count && context->options.count_value == context->seq)
-			return (sigint_handler(0));
 		if (context->options.interval)
 		{
 			sleep(context->options.interval_value.tv_sec);
