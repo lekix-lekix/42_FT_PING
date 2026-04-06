@@ -1,4 +1,4 @@
-# 📡 ft_ping — Custom Ping Implementation (Raw Sockets)
+# 📡 ft_ping — Custom Ping Implementation 
 
 ## 🧠 Overview
 
